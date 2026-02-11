@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Cerebro: Vista
+GenericName=Update Imágenes
+Comment=Solo analiza imágenes y PDFs escaneados (LLaVA)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_vision.sh
+Icon=camera-photo
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=ver;vision;imagenes;fotos;cerebro;

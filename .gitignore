@@ -1,0 +1,20 @@
+# Entornos virtuales
+venv/
+env/
+.env
+
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Datos Personales (LA MEMORIA)
+faiss_db/
+chroma_db/
+*.pkl
+*.json
+
+# Archivos de sistema y logs
+.DS_Store
+*.log
+COMANDOS.txt
+inventario_maestro.db

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Cerebro: Oído
+GenericName=Update Audio
+Comment=Solo transcribe grabaciones (Whisper)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_audio.sh
+Icon=audio-volume-high
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=escuchar;audio;oido;whisper;cerebro;

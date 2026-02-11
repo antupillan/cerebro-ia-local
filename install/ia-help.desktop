@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Comandos IA
+GenericName=Hoja de Referencia
+Comment=Ver lista de comandos del sistema Cerebro
+# EJECUTA MICRO EN UNA VENTANA DE TERMINAL
+Exec=micro /home/TU_USUARIO/cerebro_cli/COMANDOS.txt
+Icon=help-about
+Terminal=true  <--- CAMBIA ESTO A TRUE
+Type=Application
+Categories=Documentation;
+Keywords=ayuda;comandos;lista;chuleta;cerebro;

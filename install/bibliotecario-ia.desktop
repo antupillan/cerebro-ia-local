@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Bibliotecario IA
+GenericName=Organizador de Archivos
+Comment=Escaneo automático y organización
+Exec=$HOME/cerebro_cli/bin/run_bibliotecario_auto.sh
+Icon=folder-documents
+Terminal=true
+Type=Application
+Categories=System;FileTools;
+Keywords=organizar;archivos;duplicados;limpieza;escanear;

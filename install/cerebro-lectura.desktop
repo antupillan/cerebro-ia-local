@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Cerebro: Lectura Rápida
+GenericName=Update Texto
+Comment=Solo lee texto, PDFs y Docs (Rápido)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_text.sh
+Icon=text-x-generic
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=actualizar;leer;texto;pdf;

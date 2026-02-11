@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Cerebro IA
+GenericName=Asistente Multimodal
+Comment=Chat con memoria (Llama/Ollama)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_chat.sh
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=Utility;AI;
+Keywords=chat;ia;gpt;llama;cerebro;hablar;

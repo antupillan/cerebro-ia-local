@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Bibliotecario: Juez
+GenericName=Gestión Manual
+Comment=Menú para eliminar duplicados y ver stats
+Exec=$HOME/cerebro_cli/bin/run_bibliotecario_menu.sh
+Icon=folder-blue
+Terminal=true
+Type=Application
+Categories=System;
+Keywords=juez;duplicados;manual;gestion;
