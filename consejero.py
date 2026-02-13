@@ -6,145 +6,167 @@ import re
 import ollama
 from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings
-# [NUEVO] Módulo de Búsqueda Web
 from duckduckgo_search import DDGS
 
-# --- CONFIGURACIÓN ---
+# --- CONFIGURACIÓN TÉCNICA ---
 DB_SQL_PATH = "inventario_maestro.db"
 DB_VECTOR_PATH = "./faiss_db"
 MODELO_EMBEDDING = "bge-m3:latest"
-MODELO_PENSANTE = "llama3.1:8b" 
+MODELO_PENSANTE = "llama3.1:8b"
+
+# Instanciación global (sin suprimir warnings para depuración)
+try:
+    EMBEDDINGS = OllamaEmbeddings(model=MODELO_EMBEDDING)
+except Exception as e:
+    print(f"Error crítico iniciando embeddings: {e}")
+    sys.exit(1)
 
 def investigar_web(query):
-    """[ANTENA] Busca información fresca en internet."""
-    print(f" 🌐 Conectando a la red para buscar: '{query}'...")
+    """Ejecuta búsqueda externa mediante API DuckDuckGo."""
     try:
-        # Buscamos 3 resultados relevantes
-        results = DDGS().text(query, max_results=3)
-        if not results: return "Sin resultados en la web."
-        
-        informe = ""
-        for r in results:
-            informe += f"- [WEB] {r['title']}: {r['body']} (Link: {r['href']})\n"
-        return informe
+        # Usamos backend 'lite' para mayor velocidad
+        results = DDGS().text(query, max_results=3, backend="lite")
+        if not results: return "DATA_NOT_FOUND"
+        return "\n".join([f"SOURCE: {r['href']} | CONTENT: {r['body']}" for r in results])
     except Exception as e:
-        return f"Error de conexión: {e}"
+        return f"CONEXION_ERROR: {str(e)}"
 
 def obtener_frentes_activos():
-    """Detecta actividad reciente en tus archivos."""
-    if not os.path.exists(DB_SQL_PATH): return "Base de datos no encontrada."
-        
-    conn = sqlite3.connect(DB_SQL_PATH)
-    cursor = conn.cursor()
+    """Analiza telemetría de archivos mediante SQL."""
+    if not os.path.exists(DB_SQL_PATH): return "DB_NOT_FOUND"
     
-    # Buscamos carpetas con movimiento reciente
     try:
-        cursor.execute("SELECT carpeta_padre, COUNT(*) FROM (SELECT carpeta_padre FROM archivos ORDER BY fecha_modificacion DESC LIMIT 100) GROUP BY carpeta_padre ORDER BY COUNT(*) DESC LIMIT 5")
+        conn = sqlite3.connect(DB_SQL_PATH)
+        cursor = conn.cursor()
+        query = """
+            SELECT carpeta_padre, COUNT(*) 
+            FROM (SELECT carpeta_padre FROM archivos ORDER BY fecha_modificacion DESC LIMIT 100) 
+            GROUP BY carpeta_padre ORDER BY COUNT(*) DESC LIMIT 5
+        """
+        cursor.execute(query)
         zonas = cursor.fetchall()
         conn.close()
         
-        if not zonas: return "Sin actividad reciente."
-            
-        reporte = "ZONAS CALIENTES (Archivos modificados):\n"
-        for zona, intensidad in zonas:
-            reporte += f"- {zona} (Actividad: {intensidad}%)\n"
-        return reporte
-    except: return "Error SQL."
+        if not zonas: return "SIN_ACTIVIDAD_RECIENTE"
+        return "\n".join([f"SECTOR: {z[0]} | DENSIDAD: {z[1]}" for z in zonas])
+    except Exception: 
+        return "SQL_QUERY_FAILED"
 
-def generar_roles_dinamicos(contexto_actividad):
-    print(" 🔮 La IA está definiendo el Consejo basado en tu realidad...")
-    
+def generar_roles_dinamicos(contexto):
+    """Genera matriz de expertos basada en análisis de actividad."""
     prompt = f"""
-    Analiza mis archivos activos:
-    {contexto_actividad}
-
-    Define 3 roles de expertos que necesito HOY.
-    Para cada rol, incluye una 'busqueda_web' sugerida (ej: "manual taller kia besta pdf" o "bell hooks pdf").
-    
-    Responde SOLO con un JSON puro:
-    [
-        {{"id": "1", "titulo": "...", "descripcion": "...", "query_db": "...", "busqueda_web": "..."}},
-        ...
-    ]
+    ANALISIS DE ACTIVIDAD: {contexto}
+    TAREA: Determinar 3 perfiles técnicos necesarios para optimizar estos sectores.
+    FORMATO EXCLUSIVO: JSON puro.
+    SCHEMA: [{{"id": "int", "titulo": "string", "descripcion": "string", "query_db": "string", "busqueda_web": "string"}}]
     """
-    
-    res = ollama.chat(model=MODELO_PENSANTE, messages=[{'role': 'user', 'content': prompt}])
     try:
+        res = ollama.chat(model=MODELO_PENSANTE, messages=[{'role': 'user', 'content': prompt}])
         match = re.search(r'\[.*\]', res['message']['content'], re.DOTALL)
-        return json.loads(match.group(0)) if match else []
-    except: 
-        return [{"id": "1", "titulo": "Consultor General", "descripcion": "Fallback", "query_db": "general", "busqueda_web": "novedades tecnología"}]
+        if match:
+            return json.loads(match.group(0))
+        raise ValueError("JSON no encontrado")
+    except Exception:
+        # Fallback si falla la inferencia
+        return [
+            {"id": 1, "titulo": "Analista de Proyectos", "descripcion": "Gestión general", "query_db": "proyectos", "busqueda_web": "gestión proyectos"},
+            {"id": 2, "titulo": "Ingeniero de Sistemas", "descripcion": "Soporte técnico", "query_db": "linux configuración", "busqueda_web": "arch linux news"},
+            {"id": 3, "titulo": "Investigador", "descripcion": "Análisis académico", "query_db": "investigación", "busqueda_web": "papers recientes"}
+        ]
 
 def consultar_memoria(keywords):
-    """Busca en tu disco duro (FAISS)."""
+    """Recupera vectores de la base de datos FAISS."""
+    if not os.path.exists(DB_VECTOR_PATH): return "VEC_DB_NOT_FOUND"
     try:
-        embedding_func = OllamaEmbeddings(model=MODELO_EMBEDDING)
-        if not os.path.exists(DB_VECTOR_PATH): return "Memoria vacía."
-        vectorstore = FAISS.load_local(DB_VECTOR_PATH, embedding_func, allow_dangerous_deserialization=True)
-        retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-        docs = retriever.invoke(keywords)
-        return "\n".join([f"[MEMORIA LOCAL]: {d.page_content[:300]}..." for d in docs])
-    except: return "No se pudo acceder a la memoria vectorial."
+        db = FAISS.load_local(DB_VECTOR_PATH, EMBEDDINGS, allow_dangerous_deserialization=True)
+        docs = db.similarity_search(keywords, k=4)
+        if not docs: return "NO_RELEVANT_DATA"
+        return "\n".join([f"[DATA]: {d.page_content}" for d in docs])
+    except Exception as e: 
+        return f"VECTOR_ERROR: {str(e)}"
 
-def ejecutar_consejo(rol, actividad_reciente):
-    print(f"\n🧠 Invocando a: {rol['titulo']}...")
+def ejecutar_consejo(rol, actividad):
+    """Interfaz interactiva de análisis estratégico."""
+    print(f"\n[SISTEMA]: Inicializando {rol['titulo']}...")
     
-    # 1. Memoria Interna (Lo que ya tienes)
-    contexto_interno = consultar_memoria(rol['query_db'])
+    # Búsqueda inicial automática basada en el rol
+    print(f" 🔎 Investigando: '{rol['busqueda_web']}'...")
+    ext_data = investigar_web(rol['busqueda_web'])
     
-    # 2. Memoria Externa (Lo que busca en Google/DDG)
-    # Aquí es donde ocurre la magia: El rol busca lo que le falta
-    contexto_externo = investigar_web(rol['busqueda_web'])
+    print(f" 🧠 Recordando: '{rol['query_db']}'...")
+    loc_data = consultar_memoria(rol['query_db'])
+
+    print(f"[ESTADO]: ACTIVO | CONTEXTO CARGADO")
+    print("─"*60)
     
-    print(" 🤔 Sintetizando estrategia (Interna + Externa)...")
-    
-    prompt_final = f"""
-    ACTÚA COMO: {rol['titulo']}
-    CONTEXTO: {rol['descripcion']}
-    
-    MIS ARCHIVOS ACTIVOS:
-    {actividad_reciente}
-    
-    LO QUE SÉ (Memoria Local):
-    {contexto_interno}
-    
-    LO QUE ENCONTRÉ EN INTERNET (Novedades/Recursos):
-    {contexto_externo}
-    
-    Tu tarea:
-    Dame un consejo estratégico. 
-    Si encontraste recursos útiles en la web (PDFs, manuales), sugiéreme descargarlos o revisarlos (incluye los links).
-    Cruza la información local con la de internet.
-    """
-    
-    stream = ollama.chat(model=MODELO_PENSANTE, messages=[{'role': 'user', 'content': prompt_final}], stream=True)
-    
-    print("\n" + "═"*60)
-    print(f" 📋 INFORME DEL CONSEJERO")
-    print("═"*60)
-    for chunk in stream:
-        print(chunk['message']['content'], end='', flush=True)
-    print("\n" + "═"*60)
+    while True:
+        query = input(f"\nλ {rol['titulo']} > ")
+        if query.lower() in ["salir", "exit", "4", "5"]: break
+        if not query.strip(): continue
+
+        prompt = f"""
+        ROL: {rol['titulo']} ({rol['descripcion']})
+        
+        INFORME DE INTELIGENCIA:
+        [INTERNO]: {loc_data[:2500]} 
+        [EXTERNO]: {ext_data[:2500]}
+        
+        CONSULTA USUARIO: {query}
+        
+        DIRECTRICES DE RESPUESTA:
+        1. Respuesta técnica directa. Sin saludos.
+        2. Cita fuentes si usas datos [INTERNO] o [EXTERNO].
+        3. Prioriza especificaciones técnicas del [INTERNO] si existen.
+        4. Rigor científico y economía lingüística.
+        """
+        
+        print("\n", end="")
+        stream = ollama.chat(model=MODELO_PENSANTE, messages=[{'role': 'user', 'content': prompt}], stream=True)
+        for chunk in stream:
+            print(chunk['message']['content'], end='', flush=True)
+        print("\n" + "─"*60)
 
 def main():
-    print("\n🏛️  CONSEJO LÍQUIDO CONECTADO (v2.0)")
+    print("\n🏛️  CONSEJO LÍQUIDO v2.2")
     actividad = obtener_frentes_activos()
     roles = generar_roles_dinamicos(actividad)
     
-    print("\nConsejeros disponibles hoy:")
-    print("-" * 50)
+    # Lógica de Menú Extendido
+    print("\n--- MATRIZ DE EXPERTOS SUGERIDOS ---")
     for r in roles:
-        print(f" {r['id']}. {r['titulo']}")
-        print(f"    └─ Busca en web: '{r.get('busqueda_web', 'General')}'")
-    print("-" * 50)
-    print(" 4. Salir")
+        print(f"[{r['id']}] {r['titulo']}")
     
-    op = input("\n¿A quién escuchamos? ")
-    seleccion = next((r for r in roles if r['id'] == op), None)
+    # Opciones fijas
+    opcion_libre = len(roles) + 1
+    opcion_salir = len(roles) + 2
     
-    if seleccion:
-        ejecutar_consejo(seleccion, actividad)
-    elif op == '4': pass
+    print(f"[{opcion_libre}] 🏳️  Consulta Libre (Tema a elección)")
+    print(f"[{opcion_salir}] 🚪 Salir")
+    
+    sel = input("\nSELECCIONAR ID: ")
+
+    # Manejo de selección
+    if sel == str(opcion_salir):
+        print("Cerrando sesión.")
+        return
+
+    elif sel == str(opcion_libre):
+        tema = input("\n¿Sobre qué tema necesitas consejo técnico hoy? ")
+        rol_ad_hoc = {
+            "titulo": "Consultor Especialista",
+            "descripcion": f"Experto técnico en {tema}",
+            "query_db": tema,
+            "busqueda_web": tema
+        }
+        ejecutar_consejo(rol_ad_hoc, actividad)
+
+    else:
+        # Buscar en los roles generados por IA
+        rol = next((r for r in roles if str(r['id']) == sel), None)
+        if rol: 
+            ejecutar_consejo(rol, actividad)
+        else:
+            print("Selección inválida.")
 
 if __name__ == "__main__":
     main()

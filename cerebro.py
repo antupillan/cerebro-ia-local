@@ -4,6 +4,7 @@ import argparse
 import warnings
 import logging
 import io
+import shutil
 import ollama 
 from faster_whisper import WhisperModel
 from pdf2image import convert_from_path
@@ -16,8 +17,7 @@ logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
-    DirectoryLoader, TextLoader, PyPDFLoader, 
-    UnstructuredMarkdownLoader, UnstructuredWordDocumentLoader, UnstructuredODTLoader
+    TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader, UnstructuredODTLoader
 )
 from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings, ChatOllama
@@ -34,7 +34,12 @@ CHUNK_OVERLAP = 100
 MODELO_WHISPER = "tiny"
 MAX_PAGINAS_VISION = 2 
 
-# [MEJORA 1] LISTA NEGRA DE ARCHIVOS (Evita la trampa de Calibre)
+def sanear_texto(texto):
+    """Elimina caracteres incompatibles con UTF-8/JSON (surrogates)."""
+    if not texto: return ""
+    return texto.encode("utf-8", "ignore").decode("utf-8")
+
+# [MEJORA] LISTA NEGRA DE ARCHIVOS
 IGNORAR_ARCHIVOS = {'cover.jpg', 'metadata.opf', 'cover.png'}
 
 RUTAS_CARPETAS = [
@@ -50,8 +55,6 @@ RUTAS_CARPETAS = [
 def procesar_imagen(ruta_imagen, bytes_img=None, source_name=None):
     try:
         if not source_name: source_name = os.path.basename(ruta_imagen)
-        
-        # [MEJORA 2] Log Contextual: Muestra la carpeta padre para saber qué libro es
         if not bytes_img:
             padre = os.path.basename(os.path.dirname(ruta_imagen))
             print(f"   👁️  Mirando: [{padre}]/{source_name}...")
@@ -69,13 +72,10 @@ def procesar_imagen(ruta_imagen, bytes_img=None, source_name=None):
 def analizar_pdf_inteligente(ruta_pdf, activar_vision=False):
     docs = []
     texto_extraido = False
-    
-    # 1. INTENTO DE TEXTO
     try:
         loader = PyPDFLoader(ruta_pdf)
         raw_docs = loader.load()
         total_chars = sum([len(d.page_content) for d in raw_docs])
-        
         if total_chars > 100: 
             docs.extend(raw_docs)
             texto_extraido = True
@@ -83,7 +83,6 @@ def analizar_pdf_inteligente(ruta_pdf, activar_vision=False):
             print(f"   ⚠️  PDF escaneado: {os.path.basename(ruta_pdf)}")
     except: pass
 
-    # 2. INTENTO VISUAL
     if not texto_extraido and activar_vision:
         try:
             print(f"   👁️  Escaneando PDF visualmente (Máx {MAX_PAGINAS_VISION} págs)...")
@@ -95,7 +94,6 @@ def analizar_pdf_inteligente(ruta_pdf, activar_vision=False):
                 if doc: docs.append(doc)
         except Exception as e:
             print(f"   [!] Error visión PDF: {e}")
-
     return docs
 
 def procesar_audio(ruta_audio, modelo_whisper):
@@ -108,100 +106,116 @@ def procesar_audio(ruta_audio, modelo_whisper):
 # --- NUCLEO ---
 def obtener_db(embedding_func, reset=False):
     if reset and os.path.exists(VECTOR_DB_PATH):
-        import shutil
         shutil.rmtree(VECTOR_DB_PATH)
     if os.path.exists(VECTOR_DB_PATH):
         try: return FAISS.load_local(VECTOR_DB_PATH, embedding_func, allow_dangerous_deserialization=True)
         except: pass
     return None
 
+def procesar_y_guardar_lote(docs, embedding_func, vectorstore):
+    """Sincroniza un lote de documentos con FAISS y limpia la RAM."""
+    splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+    splits = splitter.split_documents(docs)
+    try:
+        if vectorstore is None:
+            vectorstore = FAISS.from_documents(splits, embedding_func)
+        else:
+            vectorstore.add_documents(splits)
+        vectorstore.save_local(VECTOR_DB_PATH)
+        print(f"✅ Lote sincronizado. RAM liberada.")
+    except Exception as e:
+        print(f"❌ Error al guardar lote: {e}")
+    return vectorstore
+
 def escanear(modos, target=None, reset=False):
     embedding_func = OllamaEmbeddings(model=MODELO_EMBEDDING)
     vectorstore = obtener_db(embedding_func, reset)
-    docs = []
+    docs_batch = []
+    archivos_corruptos = []
+    LIMITE_ARCHIVOS_BATCH = 20
+    contador_batch = 0
 
     iterador = [(os.path.dirname(target), [os.path.basename(target)])] if target else RUTAS_CARPETAS
-    
     modelo_whisper = None
     if modos.get("audio"):
-        try: modelo_whisper = WhisperModel(MODELO_WHISPER, device="cpu", compute_type="int8")
+        try: 
+            modelo_whisper = WhisperModel(MODELO_WHISPER, device="cpu", compute_type="int8")
+            print("👂 Oído (Whisper) activado.")
         except: modos["audio"] = False
 
-    print(f"\n🚀 Iniciando escaneo inteligente...")
-    ext_img = {'.jpg', '.jpeg', '.png'}
-    ext_aud = {'.mp3', '.m4a', '.wav', '.ogg'}
+    print(f"\n🚀 Escaneo: [{'TEXTO' if modos.get('texto') else ''} {'VISIÓN' if modos.get('vision') else ''} {'AUDIO' if modos.get('audio') else ''}]")
 
     for item in iterador:
         walker = os.walk(item) if isinstance(item, str) else [(item[0], [], item[1])]
-
         for root, _, files in walker:
             for file in files:
-                # [MEJORA 3] FILTROS DE SEGURIDAD
                 if target and file != os.path.basename(target): continue
-                if file.lower() in IGNORAR_ARCHIVOS: continue # <--- ESTO FALTABA
+                if file.lower() in IGNORAR_ARCHIVOS: continue
                 
                 ruta_abs = os.path.join(root, file)
                 ext = os.path.splitext(file)[1].lower()
+                try:
+                    d = []
+                    if modos.get("texto") and ext == '.pdf':
+                        d = analizar_pdf_inteligente(ruta_abs, activar_vision=modos.get("vision"))
+                    elif modos.get("texto") and ext in ['.txt', '.md', '.docx', '.odt']:
+                        if ext == '.docx': loader = UnstructuredWordDocumentLoader(ruta_abs)
+                        elif ext == '.odt': loader = UnstructuredODTLoader(ruta_abs)
+                        else: loader = TextLoader(ruta_abs, encoding='utf-8')
+                        d = loader.load()
+                    elif modos.get("vision") and ext in {'.jpg', '.jpeg', '.png'}:
+                        res_img = procesar_imagen(ruta_abs)
+                        if res_img: d = [res_img]
+                    elif modos.get("audio") and ext in {'.mp3', '.m4a', '.wav', '.ogg'} and modelo_whisper:
+                        res_aud = procesar_audio(ruta_abs, modelo_whisper)
+                        if res_aud: d = [res_aud]
+                    
+                    if d:
+                        for doc in d: doc.page_content = sanear_texto(doc.page_content)
+                        docs_batch.extend(d)
+                        contador_batch += 1
 
-                # A. PDF
-                if modos.get("texto") and ext == '.pdf':
-                    d = analizar_pdf_inteligente(ruta_abs, activar_vision=modos.get("vision"))
-                    if d: docs.extend(d)
+                    if contador_batch >= LIMITE_ARCHIVOS_BATCH:
+                        print(f"\n💾 Sincronizando lote ({contador_batch} archivos)...")
+                        vectorstore = procesar_y_guardar_lote(docs_batch, embedding_func, vectorstore)
+                        docs_batch = []
+                        contador_batch = 0
+                except Exception as e:
+                    archivos_corruptos.append(f"{ruta_abs} | Error: {str(e)}")
+                    print(f"   ❌ OMITIDO: {file}")
+                    continue
 
-                # B. TEXTO
-                elif modos.get("texto") and ext in ['.txt', '.md', '.docx', '.odt']:
-                    try: 
-                        if ext == '.docx': l = UnstructuredWordDocumentLoader(ruta_abs)
-                        elif ext == '.odt': l = UnstructuredODTLoader(ruta_abs)
-                        else: l = TextLoader(ruta_abs)
-                        d = l.load(); docs.extend(d) if d else None
-                    except: pass
+    if docs_batch:
+        print(f"\n💾 Guardando lote final...")
+        vectorstore = procesar_y_guardar_lote(docs_batch, embedding_func, vectorstore)
 
-                # C. IMAGENES
-                elif modos.get("vision") and ext in ext_img:
-                    d = procesar_imagen(ruta_abs)
-                    if d: docs.append(d)
-
-                # D. AUDIO
-                elif modos.get("audio") and ext in ext_aud and modelo_whisper:
-                    d = procesar_audio(ruta_abs, modelo_whisper)
-                    if d: docs.append(d)
-
-    if not docs:
-        print("✅ Nada nuevo que procesar.")
-        return
-
-    print(f" [MEMORIA] Guardando {len(docs)} fragmentos...")
-    splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
-    splits = splitter.split_documents(docs)
-    
-    if vectorstore is None: vectorstore = FAISS.from_documents(splits, embedding_func)
-    else: vectorstore.add_documents(splits)
-    vectorstore.save_local(VECTOR_DB_PATH)
-    print("✅ Guardado.")
+    if archivos_corruptos:
+        with open("revision_necesaria.log", "a", encoding="utf-8") as f:
+            f.write(f"\n--- SESIÓN {os.path.basename(target) if target else 'GLOBAL'} ---\n")
+            for linea in archivos_corruptos: f.write(linea + "\n")
+        print(f"⚠️  Se omitieron {len(archivos_corruptos)} archivos. Revisa 'revision_necesaria.log'.")
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--texto", action="store_true", help="Procesa texto y PDF inteligente")
-    parser.add_argument("--vision", action="store_true", help="Permite analizar imágenes y PDFs escaneados")
-    parser.add_argument("--audio", action="store_true", help="Procesa audio")
-    parser.add_argument("--reset", action="store_true", help="Resetea DB")
-    parser.add_argument("--target", type=str, help="Archivo específico")
+    parser.add_argument("--texto", action="store_true")
+    parser.add_argument("--vision", action="store_true")
+    parser.add_argument("--audio", action="store_true")
+    parser.add_argument("--reset", action="store_true")
+    parser.add_argument("--target", type=str)
     args = parser.parse_args()
 
     modos = {"texto": args.texto, "vision": args.vision, "audio": args.audio}
     
     if args.target:
         ext = os.path.splitext(args.target)[1].lower()
-        if ext in ['.jpg', '.png']: modos["vision"] = True
-        elif ext in ['.mp3', '.wav']: modos["audio"] = True
+        if ext in ['.jpg', '.png', '.jpeg']: modos["vision"] = True
+        elif ext in ['.mp3', '.wav', '.m4a']: modos["audio"] = True
         else: modos["texto"] = True 
 
     if not any(modos.values()) and not args.target and not args.reset:
         modo_chat()
-        return
-
-    escanear(modos, args.target, args.reset)
+    else:
+        escanear(modos, args.target, args.reset)
 
 def modo_chat():
     embedding_func = OllamaEmbeddings(model=MODELO_EMBEDDING)
@@ -209,11 +223,11 @@ def modo_chat():
         print("❌ Memoria vacía.")
         return
     vectorstore = FAISS.load_local(VECTOR_DB_PATH, embedding_func, allow_dangerous_deserialization=True)
-    llm = ChatOllama(model="llama3.1:8b", temperature=0.0, keep_alive="1h")
+    llm = ChatOllama(model="llama3.1:8b", temperature=0.0)
     retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
     template = "Contexto: {context}\nPregunta: {question}\nRespuesta:"
     prompt = ChatPromptTemplate.from_template(template)
-    rag_chain = ({"context": retriever | format_docs, "question": RunnablePassthrough()} | prompt | llm | StrOutputParser())
+    rag_chain = ({"context": retriever | (lambda docs: "\n\n".join(d.page_content for d in docs)), "question": RunnablePassthrough()} | prompt | llm | StrOutputParser())
     print(f"\n🧠 CEREBRO ONLINE")
     while True:
         try:
@@ -223,8 +237,6 @@ def modo_chat():
                 for chunk in rag_chain.stream(q): print(chunk, end="", flush=True)
                 print("")
         except KeyboardInterrupt: break
-
-def format_docs(docs): return "\n\n".join(doc.page_content for doc in docs)
 
 if __name__ == "__main__":
     main()

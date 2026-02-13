@@ -18,3 +18,4 @@ chroma_db/
 *.log
 COMANDOS.txt
 inventario_maestro.db
+*.db
