@@ -1,246 +1,286 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+FRANKI v6.0 - Federated Recursive Artificial Neural Knowledge Interface
+-----------------------------------------------------------------------
+EDICIÓN SEGURA (SECURE CORE)
+- Sudo: BLOQUEADO.
+- Escritura/Ejecución: REQUIERE CONFIRMACIÓN MANUAL.
+- Entorno: 100% Local (Ollama + Subprocesos).
+-----------------------------------------------------------------------
+"""
+
 import os
 import sys
+import json
+import time
+import signal
 import sqlite3
 import subprocess
 import warnings
-import shutil
-import signal
-import json
-import time
+import re
+from typing import List, Dict, Any
 from datetime import datetime
+from pathlib import Path
 
-# --- BLINDAJE DE ENTORNO (SILENCIO TOTAL DE TRAZADO) ---
-os.environ["LANGCHAIN_TRACING_V2"] = "false"
-for key in ["LANGCHAIN_HANDLER", "LANGCHAIN_ENABLE_TRACING", "LANGCHAIN_API_KEY"]:
-    if key in os.environ: os.environ.pop(key, None)
+# --- DEPENDENCIAS (BÁSICAS LOCALES) ---
+try:
+    import pyperclip
+    from odf.opendocument import OpenDocumentText
+    from odf.text import P, H
+    from odf.style import Style, TextProperties
+    from langchain_ollama import ChatOllama, OllamaEmbeddings
+    from langchain_community.vectorstores import FAISS
+    from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+    from langchain_core.tools import tool
+    from duckduckgo_search import DDGS
+except ImportError:
+    pass # Se asume entorno configurado
 
-from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, AIMessage
-from langchain_core.tools import tool
-from duckduckgo_search import DDGS
-from faster_whisper import WhisperModel
-
-warnings.filterwarnings("ignore")
-
-# --- CONFIGURACIÓN DE NÚCLEO ---
-NOMBRE_SISTEMA = "Franki (Federated Recursive Artificial Neural Knowledge Interface)"
-MODELO_ORQUESTADOR = "llama3.1:8b"
-CEREBROS_ESPECIALISTAS = {
-    "logica": "deepseek-r1:8b",     # Razonamiento crítico y planificación
-    "codigo": "qwen2.5-coder:7b"    # Ingeniería de software y scripts
-}
-MODELOS_VISION = {
-    "rapido": "moondream",
-    "normal": "llava-phi3",
-    "pro": "llama3.2-vision"
-}
-DB_PERSISTENTE = "franki_cortex.db"
-PATH_CONOCIMIENTO = "./faiss_db"
-
-class Color:
-    VERDE = '\033[92m'; AMARILLO = '\033[93m'; AZUL = '\033[94m'
-    MAGENTA = '\033[95m'; CYAN = '\033[96m'; ROJO = '\033[91m'
-    RESET = '\033[0m'; BOLD = '\033[1m'
-
-# --- GESTIÓN DE SEÑALES Y ESTADO ---
-def interceptor_señal(sig, frame):
-    print(f"\n\n{Color.ROJO}⚠️  INTERRUPCIÓN DE FLUJO: Franki reiniciando ciclo de espera...{Color.RESET}")
-    raise KeyboardInterrupt
-
-signal.signal(signal.SIGINT, interceptor_señal)
-
-# --- CAPA DE MEMORIA EPISÓDICA Y APRENDIZAJE ---
-class Memoria:
-    @staticmethod
-    def inicializar():
-        with sqlite3.connect(DB_PERSISTENTE) as conn:
-            conn.execute('''CREATE TABLE IF NOT EXISTS episodios 
-                            (id INTEGER PRIMARY KEY, timestamp TEXT, role TEXT, content TEXT)''')
-            conn.execute('''CREATE TABLE IF NOT EXISTS auditoria 
-                            (id INTEGER PRIMARY KEY, ts TEXT, comando TEXT, explicacion TEXT)''')
+# --- INTERFAZ UI ---
+class UI:
+    CYAN = '\033[96m'; GREEN = '\033[92m'; YELLOW = '\033[93m'
+    RED = '\033[91m'; MAGENTA = '\033[95m'; BOLD = '\033[1m'
+    RESET = '\033[0m'; DIM = '\033[2m'
 
     @staticmethod
-    def registrar(role, content):
-        with sqlite3.connect(DB_PERSISTENTE) as conn:
-            conn.execute("INSERT INTO episodios (timestamp, role, content) VALUES (?, ?, ?)",
-                         (datetime.now().isoformat(), role, content))
+    def header():
+        os.system('clear')
+        print(f"{UI.GREEN}{UI.BOLD}╔═════════════════════════════════════════════════════════════════════════╗")
+        print(f"║  FRANKI v6.0 - SECURE CORE (NO SUDO | HUMAN GATED)                      ║")
+        print(f"║  {UI.DIM}System: Garuda Linux | User Control: STRICT{UI.RESET}{UI.GREEN}{UI.BOLD}                            ║")
+        print(f"╚═════════════════════════════════════════════════════════════════════════╝{UI.RESET}")
+
+# --- PROTOCOLO DE SEGURIDAD ---
+class SafetyProtocol:
+    FORBIDDEN_PATTERNS = [
+        r"sudo\s+",          # Sudo explícito
+        r"su\s+",            # Switch user
+        r"rm\s+-rf\s+/",     # Borrado raíz
+        r":\(\)\{ :\|:& \};:" # Fork bomb
+    ]
 
     @staticmethod
-    def auditar(cmd, razon):
-        with sqlite3.connect(DB_PERSISTENTE) as conn:
-            conn.execute("INSERT INTO auditoria (ts, comando, explicacion) VALUES (?, ?, ?)",
-                         (datetime.now().isoformat(), cmd, razon))
+    def validate_command(cmd: str) -> str:
+        """Retorna mensaje de error si es peligroso, o None si pasa el filtro."""
+        for pattern in SafetyProtocol.FORBIDDEN_PATTERNS:
+            if re.search(pattern, cmd):
+                return f"⛔ SEGURIDAD: El comando '{cmd}' contiene patrones prohibidos ({pattern}). ACCIÓN BLOQUEADA."
+        return None
 
     @staticmethod
-    def recuperar_contexto(n=10):
+    def ask_permission(action_type: str, detail: str) -> bool:
+        """Interrumpe la ejecución para pedir permiso al usuario."""
+        print(f"\n{UI.YELLOW}⚠️  SOLICITUD DE {action_type}:{UI.RESET}")
+        print(f"   {UI.BOLD}➤ {detail}{UI.RESET}")
         try:
-            with sqlite3.connect(DB_PERSISTENTE) as conn:
-                cursor = conn.execute("SELECT role, content FROM episodios ORDER BY id DESC LIMIT ?", (n,))
-                filas = cursor.fetchall()
-                return [HumanMessage(content=c) if r=='user' else AIMessage(content=c) for r,c in reversed(filas)]
-        except: return []
+            ans = input(f"   {UI.CYAN}¿Autorizar? [s/N] > {UI.RESET}").lower().strip()
+            return ans in ['s', 'y', 'si', 'yes']
+        except KeyboardInterrupt:
+            return False
 
-# --- ARSENAL DE HERRAMIENTAS (SISTEMA SENSORIAL Y EJECUTIVO) ---
+# --- MEMORIA (LOCAL) ---
+class MemoryCortex:
+    def __init__(self):
+        self._init_sql()
+        # Usamos BGE-M3 localmente
+        self.embeddings = OllamaEmbeddings(model="bge-m3:latest")
+        self.kg_path = Path("knowledge_graph.json")
+        if not self.kg_path.exists(): self.save_kg({"user": "Entropia", "projects": []})
+
+    def _init_sql(self):
+        with sqlite3.connect("franki_memoria.db") as conn:
+            conn.execute("CREATE TABLE IF NOT EXISTS interactions (ts TEXT, role TEXT, content TEXT)")
+
+    def log(self, role, content):
+        with sqlite3.connect("franki_memoria.db") as conn:
+            conn.execute("INSERT INTO interactions VALUES (?, ?, ?)", (datetime.now().isoformat(), role, content))
+
+    def save_kg(self, data):
+        json.dump(data, open(self.kg_path, 'w'), indent=2)
+
+    def load_kg(self):
+        try: return json.load(open(self.kg_path))
+        except: return {}
+    
+    def rag_search(self, query):
+        if not os.path.exists("./faiss_db"): return ""
+        try:
+            db = FAISS.load_local("./faiss_db", self.embeddings, allow_dangerous_deserialization=True)
+            return "\n".join([d.page_content for d in db.similarity_search(query, k=2)])
+        except: return ""
+
+mem = MemoryCortex()
+
+# --- HERRAMIENTAS CONTROLADAS ---
 
 @tool
-def herramienta_vision(ruta: str, pregunta: str, precision: str = "normal"):
+def sys_bash(command: str):
     """
-    [SENTIDO: VISTA] Analiza imágenes o diagramas.
-    Niveles: 'rapido' (identificación), 'normal' (contexto), 'pro' (OCR/Ingeniería).
+    Ejecuta comandos Bash. 
+    BLOQUEA SUDO. Requiere confirmación del usuario.
     """
-    modelo = MODELOS_VISION.get(precision, "llava-phi3")
+    # 1. Filtro Automático
+    security_warning = SafetyProtocol.validate_command(command)
+    if security_warning:
+        return security_warning
+
+    # 2. Filtro Humano
+    if not SafetyProtocol.ask_permission("EJECUCIÓN BASH", command):
+        return "⛔ USUARIO DENEGÓ LA EJECUCIÓN."
+
+    # 3. Ejecución
+    print(f"{UI.DIM}   (Ejecutando...){UI.RESET}")
     try:
-        import ollama
-        print(f"{Color.CYAN}   👁️  Activando sensor visual ({modelo})...{Color.RESET}")
-        res = ollama.chat(model=modelo, messages=[{'role': 'user', 'content': pregunta, 'images': [ruta]}])
-        return f"RESULTADO VISUAL: {res['message']['content']}"
-    except Exception as e: return f"ERROR_VISUAL: {str(e)}"
+        res = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60)
+        return res.stdout if res.returncode == 0 else f"ERROR:\n{res.stderr}"
+    except Exception as e: return f"EXCEPTION: {e}"
 
 @tool
-def herramienta_especialista(rama: str, consulta: str):
+def tool_save_text(filename: str, content: str, mode: str = "w"):
     """
-    [SENTIDO: COGNICIÓN] Invoca expertos: 'logica' (DeepSeek) o 'codigo' (Qwen).
-    Usa 'logica' para estrategias de proyectos y 'codigo' para desarrollo.
+    Guarda archivos de texto/código.
+    Requiere confirmación del usuario.
     """
-    modelo = CEREBROS_ESPECIALISTAS.get(rama, MODELO_ORQUESTADOR)
+    action = "SOBRESCRIBIR" if mode == 'w' else "AÑADIR A"
+    if not SafetyProtocol.ask_permission(f"ESCRITURA ARCHIVO ({action})", f"Archivo: {filename}\n   Contenido (inicio): {content[:50]}..."):
+        return "⛔ USUARIO DENEGÓ ESCRITURA."
+
     try:
-        print(f"{Color.AZUL}   🧠 Delegando a especialista {rama} ({modelo})...{Color.RESET}")
-        llm = ChatOllama(model=modelo, temperature=0)
-        return llm.invoke(consulta).content
-    except Exception as e: return f"ERROR_ESPECIALISTA: {str(e)}"
+        with open(filename, mode) as f: f.write(content + "\n")
+        return f"Archivo {filename} actualizado."
+    except Exception as e: return f"Error escritura: {e}"
 
 @tool
-def herramienta_capataz(comando: str, razon_tecnica: str):
-    """
-    [SENTIDO: ACCIÓN] Ejecuta comandos Bash en Garuda Linux.
-    Requiere una justificación técnica sólida para su aprobación.
-    """
-    return "APPROVAL_REQUIRED"
-
-@tool
-def herramienta_cerebro_local(query: str):
-    """
-    [SENTIDO: MEMORIA] Consulta la base de datos de conocimiento FAISS (Manuales, notas, proyectos).
-    """
-    if not os.path.exists(PATH_CONOCIMIENTO): return "Memoria FAISS no inicializada."
+def tool_file_delete(filepath: str):
+    """Elimina archivos. REQUIERE CONFIRMACIÓN."""
+    if not SafetyProtocol.ask_permission("BORRADO DE ARCHIVO", filepath):
+        return "⛔ USUARIO DENEGÓ BORRADO."
     try:
-        embeddings = OllamaEmbeddings(model="bge-m3:latest")
-        db = FAISS.load_local(PATH_CONOCIMIENTO, embeddings, allow_dangerous_deserialization=True)
-        docs = db.similarity_search(query, k=3)
-        return "\n".join([f"Fragmento: {d.page_content}" for d in docs])
-    except Exception as e: return f"ERROR_MEMORIA_LOCAL: {str(e)}"
+        os.remove(filepath)
+        return f"Archivo {filepath} eliminado."
+    except Exception as e: return f"Error: {e}"
 
 @tool
-def herramienta_consejero_web(busqueda: str):
-    """
-    [SENTIDO: PERCEPCIÓN EXTERNA] Busca en la web información actualizada.
-    """
+def tool_odt_report(filename: str, title: str, content: str):
+    """Genera reporte ODT. Requiere confirmación."""
+    if not SafetyProtocol.ask_permission("GENERAR REPORTE ODT", filename):
+        return "⛔ DENEGADO."
+    if not filename.endswith(".odt"):
+        filename += ".odt"
     try:
-        results = DDGS().text(busqueda, max_results=3)
-        return "\n".join([f"[{r['title']}] {r['body']}" for r in results])
-    except: return "ERROR_WEB: No se pudo acceder a internet."
+        doc = OpenDocumentText()
+        doc.text.addElement(H(outlinelevel=1, text=title))
+        for line in content.split('\n'):
+            if line.strip(): doc.text.addElement(P(text=line.strip()))
+        doc.save(filename, True)
+        return f"Reporte guardado en {filename}"
+    except Exception as e: return f"Error ODT: {e}"
 
 @tool
-def herramienta_oido(archivo_audio: str):
-    """
-    [SENTIDO: AUDICIÓN] Transcribe archivos de voz a texto usando Whisper.
-    """
+def tool_read_file(filepath: str):
+    """[SAFE] Lee archivos (primeras 50 líneas). No requiere confirmación (Solo lectura)."""
+    if not os.path.exists(filepath): return "Archivo no existe."
     try:
-        model = WhisperModel("base", device="cpu", compute_type="int8")
-        segments, _ = model.transcribe(archivo_audio)
-        return " ".join([s.text for s in segments])
-    except Exception as e: return f"ERROR_AUDIO: {str(e)}"
+        with open(filepath, 'r') as f: return f.read(2000)
+    except Exception as e: return f"Error lectura: {e}"
 
-# --- LÓGICA DE CONTROL Y DASHBOARD ---
+@tool
+def tool_clipboard_read(dummy: str = ""):
+    """[SAFE] Lee portapapeles. No requiere confirmación."""
+    try: return pyperclip.paste()[:3000]
+    except: return "Error clipboard."
 
-def mostrar_interfaz():
-    os.system('clear')
-    print(f"{Color.BOLD}{Color.MAGENTA}╔══════════════════════════════════════════════════════════════════════╗{Color.RESET}")
-    print(f"{Color.BOLD}{Color.MAGENTA}║  {NOMBRE_SISTEMA} v6.0         ║{Color.RESET}")
-    print(f"{Color.BOLD}{Color.MAGENTA}║  ESTADO: OPERATIVO | AUDITORÍA: ACTIVA | APRENDIZAJE: ON             ║{Color.RESET}")
-    print(f"{Color.BOLD}{Color.MAGENTA}╚══════════════════════════════════════════════════════════════════════╝{Color.RESET}")
-    print(f"   [SENSÓRICA]  1: Visión  4: Cerebro  5: Consejero  6: Oído")
-    print(f"   [EJECUCIÓN]  2: Especialista (Lógica/Código)  3: Capataz (Bash)")
-    print(f"   {Color.AMARILLO}INFO:{Color.RESET} Presiona {Color.BOLD}Ctrl+C{Color.RESET} para interrumpir una tarea lenta.")
-    print("-" * 72)
+# --- CEREBRO ---
+class FrankiBrain:
+    def __init__(self):
+        # Herramientas
+        self.tools = [sys_bash, tool_save_text, tool_file_delete, tool_odt_report, tool_read_file, tool_clipboard_read]
+        self.tool_map = {t.name: t for t in self.tools}
+        
+        # Orquestador (Llama 3.1)
+        self.llm = ChatOllama(model="llama3.1:8b", temperature=0.1)
+        self.agent = self.llm.bind_tools(self.tools)
 
+    def react_loop(self, user_input: str):
+        # Contexto RAG Local
+        rag = mem.rag_search(user_input)
+        
+        system_prompt = SystemMessage(content=f"""
+        Eres FRANKI v6.0 (Secure Core).
+        
+        DIRECTRICES DE SEGURIDAD (MANDATORIAS):
+        1. NO puedes usar SUDO. Si necesitas root, pide al usuario que lo haga manualmente.
+        2. NO ejecutes cambios en disco sin preguntar (tus herramientas preguntarán, tú solo invócalas).
+        3. Prioriza soluciones BASH simples sobre scripts complejos de Python. 
+        
+        CONTEXTO MEMORIA LOCAL:
+        {rag}
+        """ 
+        )
+
+        messages = [system_prompt, HumanMessage(content=user_input)]
+        
+        print(f"{UI.DIM}   (Pensando...){UI.RESET}")
+        
+        steps = 0
+        while steps < 10:
+            try:
+                # 1. Pensamiento LLM
+                response = self.agent.invoke(messages)
+                messages.append(response)
+                
+                # Si no hay tools, terminamos
+                if not response.tool_calls:
+                    print(f"\n{UI.GREEN}FRANKI >{UI.RESET} {response.content}")
+                    mem.log("ai", response.content)
+                    break
+                
+                # 2. Ejecución de Tools (Aquí saltarán las confirmaciones)
+                for call in response.tool_calls:
+                    t_name = call['name']
+                    print(f"{UI.CYAN}   🔧 INTENTO DE HERRAMIENTA: {t_name}{UI.RESET}")
+                    
+                    tool_func = self.tool_map.get(t_name)
+                    if tool_func:
+                        try:
+                            res = tool_func.invoke(call['args'])
+                            messages.append(ToolMessage(content=str(res), tool_call_id=call['id']))
+                        except Exception as e:
+                            messages.append(ToolMessage(content=f"Error interno: {e}", tool_call_id=call['id']))
+                    else:
+                        messages.append(ToolMessage(content="Herramienta no encontrada", tool_call_id=call['id']))
+
+                steps += 1
+
+            except KeyboardInterrupt:
+                print(f"\n{UI.RED}⚠️ INTERRUPCIÓN MANUAL.{UI.RESET}")
+                return
+
+# --- MAIN ---
 def main():
-    Memoria.inicializar()
-    mostrar_interfaz()
+    UI.header()
+    brain = FrankiBrain()
     
-    # Orquestador con un toque de temperatura para proactividad
-    llm = ChatOllama(model=MODELO_ORQUESTADOR, temperature=0.3)
-    tools = [herramienta_vision, herramienta_especialista, herramienta_capataz, 
-             herramienta_cerebro_local, herramienta_consejero_web, herramienta_oido]
-    llm_con_tools = llm.bind_tools(tools)
-
-    prompt_arquitecto = SystemMessage(content=f"""
-    Eres {NOMBRE_SISTEMA}. No eres un script, eres el Arquitecto de este sistema.
-    
-    PERFIL DEL USUARIO:
-    - Entorno: Garuda Linux (Arch basado). Prioriza soluciones para este sistema.
-    - Proyectos: Camperización Kia Besta (Tactical/Hybrid), Software Aetheria, Modelo Penitenciario.
-    
-    DIRECTRICES DE AGENTE:
-    1. PROACTIVIDAD: No solo respondas. Analiza si lo solicitado puede mejorarse con un script o una consulta web.
-    2. RIGOR: Usa terminología de ingeniería (ISO, DIN, IEEE).
-    3. TRANSPARENCIA: Explica qué herramienta numerada vas a usar.
-    4. APRENDIZAJE: Si el usuario te pide organizar algo, utiliza la memoria local para ver cómo lo hiciste antes.
-    5. RAPIDEZ: Si un comando Bash soluciona el problema, propónlo de inmediato con su razón técnica.
-    """)
-
-    historial = [prompt_arquitecto] + Memoria.recuperar_contexto()
-
     while True:
         try:
-            orden = input(f"\n{Color.BOLD}👤 ORDEN > {Color.RESET}")
-            if orden.lower() in ["salir", "exit", "quit"]: break
-            if not orden.strip(): continue
-
-            Memoria.registrar("user", orden)
-            historial.append(HumanMessage(content=orden))
+            print(f"\n{UI.BOLD}{UI.GREEN}╭─[Entropia@Franki-Secure] {UI.RESET}")
+            u_input = input(f"{UI.BOLD}{UI.GREEN}╰─➤ {UI.RESET}")
             
-            # Ejecución del Orquestador
-            respuesta_agente = llm_con_tools.invoke(historial)
-            historial.append(respuesta_agente)
+            if not u_input.strip(): continue
+            if u_input.lower() in ["salir", "exit"]:
+                break
+            
+            # Comandos rápidos
+            if u_input.startswith("/clip"):
+                u_input = f"Analiza clipboard: {pyperclip.paste()[:500]}... {u_input.replace('/clip', '')}"
 
-            if respuesta_agente.tool_calls:
-                for call in respuesta_agente.tool_calls:
-                    name = call["name"]; args = call["args"]; call_id = call["id"]
-                    
-                    if name == "herramienta_capataz":
-                        print(f"\n{Color.AMARILLO}🛠️  PROPUESTA TÉCNICA DE CAPATAZ:{Color.RESET}")
-                        print(f"   {Color.BOLD}RAZÓN:{Color.RESET} {args['razon_tecnica']}")
-                        confirmacion = input(f"   ¿Ejecutar {Color.BOLD}{args['comando']}{Color.RESET}? (s/n): ").lower()
-                        
-                        if confirmacion == 's':
-                            Memoria.auditar(args['comando'], args['razon_tecnica'])
-                            resultado = subprocess.getoutput(args['comando'])
-                            print(f"   {Color.VERDE}✅ Sistema modificado y auditado correctamente.{Color.RESET}")
-                        else:
-                            resultado = "OPERACIÓN CANCELADA POR EL USUARIO."
-                    else:
-                        print(f" ⚡ Ejecutando: {name}...")
-                        resultado = globals()[name].invoke(args)
-                    
-                    historial.append(ToolMessage(content=str(resultado), tool_call_id=call_id))
-                
-                # Respuesta de cierre del agente tras usar herramientas
-                cierre = llm_con_tools.invoke(historial)
-                print(f"\n{Color.MAGENTA}Franki:{Color.RESET} {cierre.content}")
-                Memoria.registrar("ai", cierre.content)
-                historial.append(cierre)
-            else:
-                print(f"\n{Color.MAGENTA}Franki:{Color.RESET} {respuesta_agente.content}")
-                Memoria.registrar("ai", respuesta_agente.content)
+            mem.log("user", u_input)
+            brain.react_loop(u_input)
 
         except KeyboardInterrupt:
-            mostrar_interfaz()
-            # Limpiamos la última entrada si quedó huérfana
-            if historial and isinstance(historial[-1], HumanMessage): historial.pop()
-            continue
-        except Exception as e:
-            print(f"{Color.ROJO}⚠️ ERROR DE NÚCLEO: {str(e)}{Color.RESET}")
+            print(f"\n{UI.YELLOW} (Sesión pausada. 'salir' para cerrar){UI.RESET}")
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()
