@@ -1,0 +1,17 @@
+#!/bin/bash
+# En KRunner: Alt+Space -> fd analiza la paradoja de...
+
+QUERY="$*"
+notify-send -a "Franki Deep" "Razonando..." "Esto tomará unos segundos." -i brain
+
+RESPONSE=$(curl -s --max-time 60 -X POST http://127.0.0.1:54321/krunner \
+     -H "Content-Type: application/json" \
+     -d "{\"query\": \"$QUERY\", \"mode\": \"deep\"}" | jq -r '.response')
+
+if [ -z "$RESPONSE" ]; then
+    notify-send -a "Franki Deep" "Error" "Sin respuesta." -i dialog-error
+    exit 1
+fi
+
+# KDialog textbox permite scroll y copiar
+kdialog --title "Franki DeepThink" --textbox <(echo "$RESPONSE") 800 600

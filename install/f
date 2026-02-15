@@ -1,0 +1,26 @@
+#!/bin/bash
+# Uso: f "tu pregunta"
+# En KRunner: Alt+Space -> f hola franki
+
+QUERY="$*"
+ICON="/home/entropia/cerebro_cli/Franki_face.png"
+# Notificación de "Pensando..." con el Búho
+notify-send -a "Franki" "Búho Neural Pensando..." "Procesando: $QUERY" -i "$ICON"
+
+# Llamada al Daemon (timeout 10s para no colgar KRunner)
+RESPONSE=$(curl -s --max-time 10 -X POST http://127.0.0.1:54321/krunner \
+     -H "Content-Type: application/json" \
+     -d "{\"query\": \"$QUERY\", \"mode\": \"general\"}" | jq -r '.response')
+
+if [ -z "$RESPONSE" ]; then
+    notify-send -a "Franki" "Error" "El servidor no respondió o está apagado." -i dialog-error
+    exit 1
+fi
+
+# Mostrar resultado. 
+LEN=${#RESPONSE}
+if [ $LEN -lt 200 ]; then
+    notify-send -a "Franki" "Respuesta:" "$RESPONSE" -i "$ICON"
+else
+    kdialog --title "Franki" --msgbox "$RESPONSE" --icon "$ICON"
+fi

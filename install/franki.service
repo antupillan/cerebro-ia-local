@@ -1,0 +1,19 @@
+[Unit]
+Description=Franki AI Daemon (KRunner Integration)
+After=network.target
+
+[Service]
+Type=simple
+# Ajusta la ruta a donde tengas tu franki_service.py y tu python venv si usas uno
+# Asumimos que usas el python del sistema o venv local
+# Cambia /usr/bin/python3 si usas un venv específico
+ExecStart=/usr/bin/python3 /home/entropia/cerebro_cli/franki_service.py
+WorkingDirectory=/home/entropia/cerebro_cli
+Restart=always
+RestartSec=5
+# Entorno gráfico necesario para notificaciones si el script las llamara (aunque aquí las llama el cliente)
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/entropia/.Xauthority
+
+[Install]
+WantedBy=default.target

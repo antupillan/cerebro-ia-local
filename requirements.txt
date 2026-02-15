@@ -20,7 +20,7 @@ ctranslate2==4.7.1
 dataclasses-json==0.6.7
 distro==1.9.0
 docx2txt==0.9
-duckduckgo_search==8.1.1
+ddgs==9.10.0
 durationpy==0.10
 emoji==2.15.0
 faiss-cpu==1.13.2
@@ -28,8 +28,12 @@ faster-whisper==1.2.1
 filelock==3.20.3
 filetype==1.2.0
 flatbuffers==25.12.19
+flask==3.0.0
 frozenlist==1.8.0
 fsspec==2026.2.0
+google-api-python-client==2.118.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
 greenlet==3.3.1
 grpcio==1.78.0
 h11==0.16.0

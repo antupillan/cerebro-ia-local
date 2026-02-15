@@ -1,0 +1,5 @@
+#!/bin/bash
+# Llama a Franki en modo Rápido
+source /home/entropia/cerebro_cli/venv/bin/activate
+cd /home/entropia/cerebro_cli
+python franki_krunner.py fast "$*"

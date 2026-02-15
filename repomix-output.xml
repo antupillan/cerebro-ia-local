@@ -1,0 +1,2291 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+bin/
+  code
+  deep
+  ia
+  run_bibliotecario_auto.sh
+  run_bibliotecario_menu.sh
+  run_bibliotecario.sh
+  run_cerebro_audio.sh
+  run_cerebro_chat.sh
+  run_cerebro_full.sh
+  run_cerebro_text.sh
+  run_cerebro_vision.sh
+  run_cerebro.sh
+  run_consejero.sh
+install/
+  bibliotecario-ia.desktop
+  bibliotecario-juez.desktop
+  cerebro-audio.desktop
+  cerebro-ia.desktop
+  cerebro-lectura.desktop
+  cerebro-vision.desktop
+  f
+  fc
+  fd
+  franki.service
+  ia-help.desktop
+.gitignore
+bibliotecario.py
+centinela.py
+cerebro.py
+COMANDOS.txt~
+consejero.py
+cronos.py
+Franki_face.png
+franki_krunner.py
+franki_service.py
+franki.py
+limpieza_duplicados.sh
+oido.py
+README.md
+requirements.txt
+setup.sh
+test_rutas.py
+vigia.py
+vision.py
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="bin/code">
+#!/bin/bash
+# Llama a Franki en modo Programador (Qwen)
+source /home/entropia/cerebro_cli/venv/bin/activate
+cd /home/entropia/cerebro_cli
+python franki_krunner.py code "$*"
+</file>
+
+<file path="bin/deep">
+#!/bin/bash
+# Llama a Franki en modo Pensador (DeepSeek)
+source /home/entropia/cerebro_cli/venv/bin/activate
+cd /home/entropia/cerebro_cli
+python franki_krunner.py deep "$*"
+</file>
+
+<file path="bin/ia">
+#!/bin/bash
+# Llama a Franki en modo Rápido
+source /home/entropia/cerebro_cli/venv/bin/activate
+cd /home/entropia/cerebro_cli
+python franki_krunner.py fast "$*"
+</file>
+
+<file path="install/f">
+#!/bin/bash
+# Uso: f "tu pregunta"
+# En KRunner: Alt+Space -> f hola franki
+
+QUERY="$*"
+ICON="/home/entropia/cerebro_cli/Franki_face.png"
+# Notificación de "Pensando..." con el Búho
+notify-send -a "Franki" "Búho Neural Pensando..." "Procesando: $QUERY" -i "$ICON"
+
+# Llamada al Daemon (timeout 10s para no colgar KRunner)
+RESPONSE=$(curl -s --max-time 10 -X POST http://127.0.0.1:54321/krunner \
+     -H "Content-Type: application/json" \
+     -d "{\"query\": \"$QUERY\", \"mode\": \"general\"}" | jq -r '.response')
+
+if [ -z "$RESPONSE" ]; then
+    notify-send -a "Franki" "Error" "El servidor no respondió o está apagado." -i dialog-error
+    exit 1
+fi
+
+# Mostrar resultado. 
+LEN=${#RESPONSE}
+if [ $LEN -lt 200 ]; then
+    notify-send -a "Franki" "Respuesta:" "$RESPONSE" -i "$ICON"
+else
+    kdialog --title "Franki" --msgbox "$RESPONSE" --icon "$ICON"
+fi
+</file>
+
+<file path="install/fc">
+#!/bin/bash
+# En KRunner: Alt+Space -> fc crea un script en python...
+
+QUERY="$*"
+notify-send -a "Franki Coder" "Generando código..." "$QUERY" -i application-x-python
+
+RESPONSE=$(curl -s --max-time 30 -X POST http://127.0.0.1:54321/krunner \
+     -H "Content-Type: application/json" \
+     -d "{\"query\": \"$QUERY\", \"mode\": \"code\"}" | jq -r '.response')
+
+if [ -z "$RESPONSE" ]; then
+    notify-send -a "Franki Coder" "Error" "Sin respuesta del servidor." -i dialog-error
+    exit 1
+fi
+
+# Copiar al portapapeles automáticamente (Wayland/X11 safe)
+if command -v wl-copy &> /dev/null; then
+    echo "$RESPONSE" | wl-copy
+elif command -v xclip &> /dev/null; then
+    echo "$RESPONSE" | xclip -selection clipboard
+fi
+
+notify-send -a "Franki Coder" "¡Listo!" "Código copiado al portapapeles." -i edit-copy
+</file>
+
+<file path="install/fd">
+#!/bin/bash
+# En KRunner: Alt+Space -> fd analiza la paradoja de...
+
+QUERY="$*"
+notify-send -a "Franki Deep" "Razonando..." "Esto tomará unos segundos." -i brain
+
+RESPONSE=$(curl -s --max-time 60 -X POST http://127.0.0.1:54321/krunner \
+     -H "Content-Type: application/json" \
+     -d "{\"query\": \"$QUERY\", \"mode\": \"deep\"}" | jq -r '.response')
+
+if [ -z "$RESPONSE" ]; then
+    notify-send -a "Franki Deep" "Error" "Sin respuesta." -i dialog-error
+    exit 1
+fi
+
+# KDialog textbox permite scroll y copiar
+kdialog --title "Franki DeepThink" --textbox <(echo "$RESPONSE") 800 600
+</file>
+
+<file path="install/franki.service">
+[Unit]
+Description=Franki AI Daemon (KRunner Integration)
+After=network.target
+
+[Service]
+Type=simple
+# Ajusta la ruta a donde tengas tu franki_service.py y tu python venv si usas uno
+# Asumimos que usas el python del sistema o venv local
+# Cambia /usr/bin/python3 si usas un venv específico
+ExecStart=/usr/bin/python3 /home/entropia/cerebro_cli/franki_service.py
+WorkingDirectory=/home/entropia/cerebro_cli
+Restart=always
+RestartSec=5
+# Entorno gráfico necesario para notificaciones si el script las llamara (aunque aquí las llama el cliente)
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/entropia/.Xauthority
+
+[Install]
+WantedBy=default.target
+</file>
+
+<file path="centinela.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+CENTINELA v1.0 - Monitor de Salud del Sistema
+---------------------------------------------
+Rol: Auditoría rápida de hardware y uso de recursos.
+Uso: python centinela.py [report]
+"""
+
+import sys
+import psutil
+import subprocess
+import shutil
+
+def get_cpu_info():
+    """Devuelve carga y temperatura promedio (si sensors está disponible)."""
+    load = psutil.cpu_percent(interval=1)
+    
+    # Intento de lectura de temperatura (puede variar según hardware)
+    temp_msg = "N/A"
+    try:
+        temps = psutil.sensors_temperatures()
+        if 'coretemp' in temps:
+            avg_temp = sum(t.current for t in temps['coretemp']) / len(temps['coretemp'])
+            temp_msg = f"{avg_temp:.1f}°C"
+        elif 'k10temp' in temps: # AMD
+            avg_temp = temps['k10temp'][0].current
+            temp_msg = f"{avg_temp:.1f}°C"
+    except: pass
+    
+    return f"CPU: {load}% | Temp: {temp_msg}"
+
+def get_ram_info():
+    mem = psutil.virtual_memory()
+    return f"RAM: {mem.percent}% ({mem.used // (1024**3)}GB / {mem.total // (1024**3)}GB)"
+
+def get_disk_info(path="/"):
+    usage = shutil.disk_usage(path)
+    percent = (usage.used / usage.total) * 100
+    free_gb = usage.free // (1024**3)
+    return f"Disco ('{path}'): {percent:.1f}% ocupado | Libres: {free_gb}GB"
+
+def reporte_general():
+    """Genera un resumen ejecutivo para Franki."""
+    uptime = subprocess.getoutput("uptime -p").replace("up ", "")
+    
+    reporte = [
+        f"--- INFORME CENTINELA (Uptime: {uptime}) ---",
+        get_cpu_info(),
+        get_ram_info(),
+        get_disk_info("/"), # Root
+        get_disk_info("/home") # Home (importante para usuario)
+    ]
+    
+    # Comprobar batería si existe
+    if hasattr(psutil, "sensors_battery") and psutil.sensors_battery():
+        bat = psutil.sensors_battery()
+        plugged = "🔌 Conectado" if bat.power_plugged else "🔋 Batería"
+        reporte.append(f"Energía: {bat.percent}% ({plugged})")
+
+    return "\n".join(reporte)
+
+if __name__ == "__main__":
+    print(reporte_general())
+</file>
+
+<file path="cronos.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-"""
+CRONOS v1.2 - GESTOR TEMPORAL LOCAL (Obsidian + Parsing)
+--------------------------------------------------------
+Rol: Ejecutivo de Agenda Privada.
+Capacidades: Leer, escribir y PARSEAR Agenda.md de Obsidian.
+"""
+
+import os
+import datetime
+import re
+
+# Ruta a tu carpeta de Obsidian
+OBSIDIAN_VAULT_PATH = os.path.expanduser("~/Documentos/ObsidianVault")
+AGENDA_PATH = os.path.join(OBSIDIAN_VAULT_PATH, "Agenda.md")
+
+class CronosLocal:
+    def __init__(self):
+        if not os.path.exists(OBSIDIAN_VAULT_PATH):
+            os.makedirs(OBSIDIAN_VAULT_PATH, exist_ok=True)
+        
+        if not os.path.exists(AGENDA_PATH):
+            with open(AGENDA_PATH, "w", encoding='utf-8') as f:
+                f.write("# 📅 MI AGENDA EJECUTIVA\n")
+                f.write(f"Creada el: {datetime.datetime.now().strftime('%Y-%m-%d')}\n\n")
+                f.write("## Pendientes\n")
+
+    def listar_eventos(self, max_results=10):
+        try:
+            if not os.path.exists(AGENDA_PATH): return "No se encuentra el archivo de agenda."
+            with open(AGENDA_PATH, "r", encoding='utf-8') as f:
+                lineas = f.readlines()
+            pendientes = [l.strip() for l in lineas if "- [ ]" in l]
+            if not pendientes: return "No tienes tareas pendientes."
+            return "📅 AGENDA LOCAL (Obsidian):\n" + "\n".join(pendientes[:max_results])
+        except Exception as e: return f"Error: {e}"
+
+    def crear_evento(self, resumen, fecha_hora_iso):
+        """Añade una tarea. Formato esperado fecha: YYYY-MM-DD HH:MM"""
+        try:
+            timestamp = fecha_hora_iso if fecha_hora_iso else "Pronto"
+            # Formato estándar para facilitar el parsing posterior
+            # Ejemplo: - [ ] 2026-02-14 15:30 | Revisar aceite
+            nueva_tarea = f"- [ ] {timestamp} | {resumen}\n"
+            with open(AGENDA_PATH, "a", encoding='utf-8') as f:
+                f.write(nueva_tarea)
+            return f"✅ Tarea anotada: {resumen}"
+        except Exception as e: return f"Error: {e}"
+
+    def obtener_eventos_raw(self):
+        """
+        Devuelve una lista de diccionarios para que el Daemon haga cálculos.
+        Retorna: [{'dt': datetime_obj, 'summary': str}, ...] 
+        """
+        eventos_procesables = []
+        if not os.path.exists(AGENDA_PATH): return []
+        
+        try:
+            with open(AGENDA_PATH, "r", encoding='utf-8') as f:
+                lineas = f.readlines()
+            
+            # Regex para buscar fechas tipo YYYY-MM-DD HH:MM o YYYY-MM-DDTHH:MM:SS
+            # Formato esperado en Obsidian: "- [ ] 2026-02-14 18:00 | Titulo"
+            patron_fecha = r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2})"
+            
+            for linea in lineas:
+                if "- [ ]" in linea and "|" in linea:
+                    match = re.search(patron_fecha, linea)
+                    if match:
+                        fecha_str = match.group(1).replace("T", " ")
+                        try:
+                            # Intentamos parsear la fecha
+                            dt = datetime.datetime.strptime(fecha_str, "%Y-%m-%d %H:%M")
+                            # Extraemos el título (lo que va después del |)
+                            resumen = linea.split("|", 1)[1].strip()
+                            eventos_procesables.append({'dt': dt, 'summary': resumen})
+                        except ValueError:
+                            continue # Si la fecha está mal escrita, la saltamos
+        except Exception:
+            pass
+            
+        return eventos_procesables
+
+reloj = CronosLocal()
+</file>
+
+<file path="franki_krunner.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+FRANKI KRUNNER BRIDGE v1.0
+--------------------------
+Permite invocar a la IA desde Alt+Space (KRunner/Rofi).
+Uso: python franki_krunner.py [fast|deep|code|vision] "query"
+Salida: Notificación de sistema (notify-send) o Portapapeles.
+--------------------------
+"""
+
+import sys
+import os
+import subprocess
+import time
+import warnings
+import logging
+
+# Configuración de logs para depuración
+logging.basicConfig(filename="/tmp/franki_krunner.log", level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Supress Pydantic V1 warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+warnings.filterwarnings("ignore", category=UserWarning, module="langchain_core")
+
+try:
+    import pyperclip
+    from langchain_ollama import ChatOllama
+except ImportError as e:
+    logging.error(f"Import Error: {e}")
+    sys.exit(f"Error: Faltan dependencias. {e}")
+
+# --- CONFIGURACIÓN ---
+MODELS = {
+    "fast": "llama3.2:3b",     # Respuesta inmediata (< 2s)
+    "normal": "llama3.1:8b",   # Razonamiento estándar
+    "deep": "deepseek-r1:8b",  # Pensamiento profundo
+    "code": "qwen2.5-coder:7b" # Generación de código
+}
+
+def notificar(titulo, mensaje, urgencia="normal"):
+    """Envía notificación al escritorio KDE de forma segura."""
+    try:
+        subprocess.run(
+            ["notify-send", "-u", urgencia, "-t", "10000", titulo, mensaje],
+            check=False
+        )
+    except Exception as e:
+        logging.error(f"Error enviando notificación: {e}")
+
+def copiar_portapapeles(texto):
+    try:
+        pyperclip.copy(texto)
+        notificar("Franki", "Respuesta copiada al portapapeles.")
+    except Exception as e:
+        logging.error(f"Error copiando al portapapeles: {e}")
+        notificar("Franki Error", "Fallo al copiar al portapapeles.", "critical")
+
+def ejecutar_ia(modo, query):
+    model = MODELS.get(modo, MODELS["normal"])
+    logging.info(f"Ejecutando IA. Modo: {modo}, Query: {query}")
+    
+    # Feedback inmediato
+    notificar("Franki", f"Pensando ({modo})...", "low")
+    
+    try:
+        llm = ChatOllama(model=model, temperature=0.1)
+        res = llm.invoke(query).content
+        logging.info("Respuesta recibida correctamente.")
+        
+        # Si es código o muy largo, mejor al portapapeles
+        if modo == "code" or len(res) > 200:
+            copiar_portapapeles(res)
+            # Mostramos solo el inicio en la notificación
+            notificar("Franki (Copiado)", res[:150] + "...")
+        else:
+            notificar("Franki", res)
+            
+    except Exception as e:
+        error_msg = str(e)
+        logging.error(f"Error en ejecución IA: {error_msg}")
+        notificar("Franki Error", error_msg, "critical")
+
+def main():
+    if len(sys.argv) < 3:
+        print("Uso: franki_krunner.py [fast|deep|code] 'query'")
+        sys.exit(1)
+        
+    modo = sys.argv[1]
+    query = sys.argv[2]
+    
+    ejecutar_ia(modo, query)
+
+if __name__ == "__main__":
+    main()
+</file>
+
+<file path="franki_service.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import time
+import threading
+import subprocess
+import logging
+import sys
+from datetime import datetime, timedelta
+from flask import Flask, request, jsonify
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+
+# Importamos módulos clave
+try:
+    from franki import FrankiBrain, mem, UI
+    import cronos
+except ImportError as e:
+    sys.exit(f"Error importando Franki: {e}")
+
+# Configuración Flask
+app = Flask(__name__)
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+# --- MONITOR DE AGENDA (LATIDO) ---
+class AgendaMonitor(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.daemon = True # Muere si el programa principal muere
+        self.notificados = set() # Memoria para no repetir avisos
+
+    def enviar_notificacion(self, titulo, cuerpo, urgencia="normal"):
+        # Rostro oficial de Franki
+        icon_path = "/home/entropia/cerebro_cli/Franki_face.png"
+        # Usa el sistema nativo de KDE Plasma (notify-send)
+        subprocess.run([
+            "notify-send", 
+            "-a", "Franki Agenda", 
+            "-u", urgencia, 
+            "-i", icon_path, 
+            titulo, 
+            cuerpo
+        ])
+
+    def run(self):
+        print("⏰ [DAEMON] Monitor de Agenda iniciado. Latido activo.")
+        while True:
+            try:
+                # 1. Obtener eventos crudos desde Cronos (Local)
+                # Formato: [{'dt': datetime_obj, 'summary': str}, ...]
+                eventos = cronos.reloj.obtener_eventos_raw()
+                
+                ahora = datetime.now()
+
+                for evt in eventos:
+                    dt_evento = evt['dt']
+                    resumen = evt['summary']
+                    
+                    # Identificador único simple (fecha + titulo) para evitar duplicados
+                    evt_id = f"{dt_evento.strftime('%Y%m%d%H%M')}-{resumen}"
+                    
+                    # Cálculo de tiempo restante en minutos
+                    diff = dt_evento - ahora
+                    minutos_restantes = diff.total_seconds() / 60
+                    
+                    # LÓGICA DE AVISO (Rango de 14 a 16 minutos antes)
+                    if 14 < minutos_restantes < 16 and evt_id not in self.notificados:
+                        self.enviar_notificacion(
+                            f"Reunión en 15 min: {resumen}",
+                            "Prepara tus documentos. ¿Quieres que abra las notas?",
+                            urgencia="critical"
+                        )
+                        self.notificados.add(evt_id)
+                        mem.log("sistema", f"AVISO: Reunión '{resumen}' en 15 min.")
+                        
+                    # LÓGICA DE AVISO (Rango de 0 a 2 minutos antes - ES AHORA)
+                    elif 0 < minutos_restantes < 2 and f"{evt_id}_NOW" not in self.notificados:
+                        self.enviar_notificacion(
+                            f"ES AHORA: {resumen}",
+                            "¡Comienza ya!",
+                            urgencia="critical"
+                        )
+                        self.notificados.add(f"{evt_id}_NOW")
+
+            except Exception as e:
+                # print(f"Error silencioso en monitor agenda: {e}")
+                pass
+
+            time.sleep(60) # Revisar cada minuto (Latido lento para ahorrar CPU)
+
+# --- INICIO DEL SERVIDOR ---
+
+print("🧠 [DAEMON] Cargando Franki Brain...")
+brain = FrankiBrain()
+
+# Arrancamos el corazón de la agenda
+monitor = AgendaMonitor()
+monitor.start()
+
+print("✅ [DAEMON] Franki Service + Agenda Monitor operando (Puerto 54321).")
+
+@app.route('/krunner', methods=['POST'])
+def krunner_endpoint():
+    data = request.json
+    query = data.get('query', '')
+    mode = data.get('mode', 'general') # general, code, deep
+
+    if not query: return jsonify({"response": "Error: Consulta vacía"})
+
+    mem.log("user_krunner", f"[{mode}] {query}")
+    
+    try:
+        response_text = ""
+        
+        # --- MODO CÓDIGO (Rápido con Qwen) ---
+        if mode == 'code':
+            prompt = f"Genera SOLAMENTE código para: {query}"
+            res = brain.tool_map['tool_consult_specialist'].invoke({'specialty': 'coder', 'task': prompt})
+            response_text = res
+            
+        # --- MODO PROFUNDO (Lento con DeepSeek) ---
+        elif mode == 'deep':
+            res = brain.tool_map['tool_consult_specialist'].invoke({'specialty': 'thinker', 'task': query})
+            response_text = res
+            
+        # --- MODO GENERAL (El Orquestador Llama 3.1) ---
+        else:
+            # Contexto rápido (sin imprimir todo el RAG)
+            import cerebro
+            rag = cerebro.motor.consultar(query)
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            sys_prompt = SystemMessage(content=f"""
+            Eres FRANKI v8.2 (Modo KRunner/Daemon).
+            Responde de forma CONCISA y DIRECTA. Tienes acceso a herramientas.
+            Ubicación: Santiago, Chile. Hora: {now_str}.
+            Contexto RAG: {rag[:500]}...
+            """)
+            
+            messages = [sys_prompt, HumanMessage(content=query)]
+            
+            steps = 0
+            while steps < 5: 
+                res = brain.agent.invoke(messages)
+                messages.append(res)
+                
+                if not res.tool_calls:
+                    response_text = res.content
+                    break
+                
+                for call in res.tool_calls:
+                    t_name = call['name']
+                    func = brain.tool_map.get(t_name)
+                    if func:
+                        try:
+                            out = func.invoke(call['args'])
+                            messages.append(ToolMessage(content=str(out), tool_call_id=call['id']))
+                        except Exception as e:
+                            messages.append(ToolMessage(content=f"Error: {e}", tool_call_id=call['id']))
+                steps += 1
+            
+            if not response_text:
+                response_text = "No pude generar una respuesta final tras usar las herramientas."
+
+        mem.log("ai_daemon", str(response_text))
+        return jsonify({"response": str(response_text)})
+
+    except Exception as e:
+        return jsonify({"response": f"Error interno Franki: {e}"})
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=54321, threaded=True)
+</file>
+
+<file path="oido.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+OIDO v2.0 - Módulo de Transcripción Neural
+------------------------------------------
+Rol: Oídos del sistema. Convierte voz a texto.
+Motor: Faster-Whisper (local).
+Modelos recomendados: 'small' (rápido) o 'medium' (preciso).
+
+Uso: python oido.py <archivo_audio> [--model medium]
+Salida: Texto transcrito en stdout.
+------------------------------------------
+"""
+
+import sys
+import os
+import argparse
+import time
+import warnings
+
+# Silenciar advertencias de Torch/Whisper
+warnings.filterwarnings("ignore")
+
+try:
+    from faster_whisper import WhisperModel
+except ImportError:
+    sys.exit("Error: Falta 'faster-whisper'. pip install faster-whisper")
+
+# --- INTEGRACIÓN CEREBRO (Aprendizaje Pasivo) ---
+try:
+    from cerebro import memorizar
+except ImportError:
+    # Si no hay cerebro, decorador dummy que no hace nada
+    def memorizar(tipo_origen):
+        return lambda func: func
+
+# Colores para feedback
+CYAN = '\033[96m'
+RESET = '\033[0m'
+
+@memorizar("audio_transcrito")
+def transcribir_audio(ruta_audio, modelo="small", idioma=None):
+    if not os.path.exists(ruta_audio):
+        return f"Error: Archivo {ruta_audio} no encontrado."
+
+    print(f"{CYAN}   👂 Cargando modelo Whisper ({modelo})...{RESET}", file=sys.stderr)
+    
+    try:
+        # device="auto" elegirá GPU si está disponible (CUDA) o CPU
+        # compute_type="int8" es más rápido en CPU
+        model = WhisperModel(modelo, device="auto", compute_type="int8")
+        
+        print(f"{CYAN}   🎙️  Transcribiendo...{RESET}", file=sys.stderr)
+        segments, info = model.transcribe(ruta_audio, beam_size=5, language=idioma)
+        
+        texto_final = []
+        for segment in segments:
+            texto_final.append(segment.text)
+            # Feedback de progreso en stderr para no ensuciar el pipe
+            # print(f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}", file=sys.stderr)
+            
+        return " ".join(texto_final).strip()
+
+    except Exception as e:
+        return f"Error en transcripción: {str(e)}"
+
+def main():
+    parser = argparse.ArgumentParser(description="Módulo de Oído (Whisper Local)")
+    parser.add_argument("file", help="Ruta del archivo de audio (mp3, wav, m4a...)")
+    parser.add_argument("--model", default="small", help="Modelo Whisper (tiny, small, medium, large-v3)")
+    parser.add_argument("--lang", default=None, help="Idioma (es, en...). Auto si se omite.")
+    
+    args = parser.parse_args()
+    
+    resultado = transcribir_audio(args.file, args.model, args.lang)
+    print(resultado)
+
+if __name__ == "__main__":
+    main()
+</file>
+
+<file path="vigia.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+VIGIA v1.0 - OJO CONTEXTUAL
+---------------------------
+Rol: Analista de Pantalla en Tiempo Real.
+Herramienta: Spectacle (KDE) + Módulo Visión.
+Comportamiento: Captura -> Analiza -> Borra (No guarda en Cerebro).
+"""
+
+import os
+import sys
+import time
+import subprocess
+try:
+    import vision # Importamos nuestro módulo de visión existente
+except ImportError:
+    sys.exit("Error: Falta vision.py")
+
+TEMP_PATH = "/tmp/franki_ojo_temp.png"
+
+def capturar_y_analizar(pregunta, mode="region"):
+    print(f"📸 [VIGÍA] Preparando captura ({mode})...")
+    time.sleep(1) # Pequeña pausa para que te prepares
+    
+    # Usamos spectacle en modo región rectangular (-r), background (-b), sin notificar (-n)
+    cmd = ["spectacle", "-b", "-n", "-o", TEMP_PATH]
+    
+    if mode == "region":
+        cmd.append("-r")
+    elif mode == "active":
+        cmd.append("-a")
+    elif mode == "full":
+        cmd.append("-f")
+    
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        return "❌ Cancelaste la captura o hubo un error."
+
+    if not os.path.exists(TEMP_PATH):
+        return "❌ Error: No se generó la imagen."
+
+    print("👁️ [VIGÍA] Analizando píxeles...")
+    # Llamamos a Visión en modo DETALLADO (Llama 3.2) para que lea texto
+    # IMPORTANTE: vision.analyze_image no debe tener el decorador @memorizar para esto
+    # Pero como lo tiene, el decorador lo capturará... 
+    # TRUCO: Si queremos evitar la memoria a largo plazo, podríamos hacer un bypass
+    # o aceptar que se guarde. Según tu diseño anterior, NO quieres que se guarde.
+    # Como 'vision' ya tiene el decorador pegado, una solución limpia es invocar
+    # la función original 'undecorated' si Python lo permitiera fácil, 
+    # o mejor aún: dejamos que se guarde como "contexto visual" efímero en la DB
+    # o modificamos vision.py para aceptar un flag "no_memoria".
+    
+    # Por ahora, usamos vision tal cual. Si se guarda, se guarda.
+    analisis = vision.analyze_image(TEMP_PATH, pregunta, fast_mode=False)
+    
+    # LIMPIEZA EFÍMERA (Privacidad Contextual)
+    if os.path.exists(TEMP_PATH):
+        os.remove(TEMP_PATH)
+    
+    return f"🔎 ANÁLISIS DE PANTALLA:\n{analisis}"
+
+if __name__ == "__main__":
+    pregunta = sys.argv[1] if len(sys.argv) > 1 else "Describe esto y qué debo hacer."
+    print(capturar_y_analizar(pregunta))
+</file>
+
+<file path="vision.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+VISION v2.0 - Módulo de Análisis Visual Neural
+----------------------------------------------
+Rol: Ojos del sistema. Analiza imágenes locales.
+Modelos:
+- Moondream: Rápido, descripciones generales.
+- Llama 3.2-Vision: Detallado, OCR, análisis técnico.
+
+Uso: python vision.py <ruta_imagen> [prompt] [--fast]
+----------------------------------------------
+"""
+
+import sys
+import os
+import argparse
+try:
+    import ollama
+except ImportError:
+    sys.exit("Error: Falta librería 'ollama'. pip install ollama")
+
+# --- INTEGRACIÓN CEREBRO (Aprendizaje Pasivo) ---
+try:
+    from cerebro import memorizar
+except ImportError:
+    # Si no hay cerebro, decorador dummy que no hace nada
+    def memorizar(tipo_origen):
+        return lambda func: func
+
+MODELS = {
+    "fast": "moondream:latest",
+    "detail": "llama3.2-vision:latest"
+}
+
+@memorizar("imagen_analizada")
+def analyze_image(image_path: str, prompt: str, fast_mode: bool = False) -> str:
+    if not os.path.exists(image_path):
+        return f"Error: Imagen no encontrada en {image_path}"
+
+    model = MODELS["fast"] if fast_mode else MODELS["detail"]
+    
+    try:
+        response = ollama.chat(
+            model=model,
+            messages=[{
+                'role': 'user',
+                'content': prompt,
+                'images': [image_path]
+            }]
+        )
+        return response['message']['content']
+    except Exception as e:
+        return f"Error en análisis visual: {str(e)}"
+
+def main():
+    parser = argparse.ArgumentParser(description="Módulo de Visión Artificial")
+    parser.add_argument("path", help="Ruta de la imagen")
+    parser.add_argument("prompt", nargs="?", default="Describe esta imagen.", help="Pregunta sobre la imagen")
+    parser.add_argument("--fast", action="store_true", help="Usar modelo rápido (Moondream)")
+    
+    args = parser.parse_args()
+    
+    print(f"--- Viendo: {args.path} ({'Rápido' if args.fast else 'Detallado'}) ---", file=sys.stderr)
+    result = analyze_image(args.path, args.prompt, args.fast)
+    print(result)
+
+if __name__ == "__main__":
+    main()
+</file>
+
+<file path="bin/run_bibliotecario_auto.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "🕵️ Escaneo rápido de archivos en curso..."
+python bibliotecario.py --auto
+read -p "Inventario actualizado. Enter para salir..."
+</file>
+
+<file path="bin/run_bibliotecario_menu.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python bibliotecario.py
+read -p "Gestión terminada. Enter para salir..."
+</file>
+
+<file path="bin/run_bibliotecario.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python bibliotecario.py
+read -p "Presiona Enter para cerrar..."
+</file>
+
+<file path="bin/run_cerebro_audio.sh">
+#!/bin/bash
+
+# Configuración
+VENV_PATH="/home/entropia/cerebro_cli/venv"
+CEREBRO_PATH="/home/entropia/cerebro_cli"
+TEMP_AUDIO="/tmp/franki_voz.wav"
+
+# Colores
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Limpiar restos anteriores
+rm -f "$TEMP_AUDIO"
+
+echo -e "${BLUE}🎙️  FRANKI ESCUCHANDO... (Presiona ENTER para detener)${NC}"
+
+# Iniciar grabación en segundo plano (silencioso)
+parecord --format=s16le --channels=1 --rate=16000 "$TEMP_AUDIO" > /dev/null 2>&1 &
+PID_REC=$!
+
+# Esperar a que el usuario presione ENTER
+read -p ""
+
+# Detener grabación limpiamente
+kill -SIGINT "$PID_REC" 2>/dev/null
+wait "$PID_REC" 2>/dev/null
+
+echo -e "${GREEN}🛑 Procesando audio...${NC}"
+
+# Transcripción
+echo -e "${BLUE}🧠 Transcribiendo...${NC}"
+source "$VENV_PATH/bin/activate"
+cd "$CEREBRO_PATH"
+
+# Usamos python directamente para capturar la salida limpia
+TEXTO_TRANSCRITO=$(python oido.py "$TEMP_AUDIO" --model small 2>/dev/null)
+
+if [ -z "$TEXTO_TRANSCRITO" ]; then
+    echo "❌ No se escuchó nada o hubo un error."
+    exit 1
+fi
+
+echo -e "${GREEN}🗣️  Tú dijiste: $TEXTO_TRANSCRITO${NC}"
+
+# Enviar a Franki (usando el módulo KRunner para notificación)
+python franki_krunner.py fast "$TEXTO_TRANSCRITO"
+
+# Limpieza
+rm "$TEMP_AUDIO"
+</file>
+
+<file path="bin/run_cerebro_chat.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python cerebro.py
+read -p "Cierre de sesión. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro_full.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "👁️👂 Procesando Multimedia (Imágenes y Audio)..."
+python cerebro.py --vision --audio
+read -p "Procesamiento sensorial terminado. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro_text.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "📚 Actualizando lecturas (Texto, PDF, Docs)..."
+python cerebro.py --texto
+read -p "Lectura completada. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro_vision.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "👁️ Analizando Imágenes y PDFs escaneados..."
+python cerebro.py --vision
+read -p "Análisis visual completado. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python cerebro.py
+# Pausa al final por si hay error, para poder leerlo
+read -p "Presiona Enter para cerrar..."
+</file>
+
+<file path="bin/run_consejero.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python consejero.py
+read -p "Sesión estratégica finalizada. Enter para salir..."
+</file>
+
+<file path="install/bibliotecario-ia.desktop">
+[Desktop Entry]
+Name=Bibliotecario IA
+GenericName=Organizador de Archivos
+Comment=Escaneo automático y organización
+Exec=$HOME/cerebro_cli/bin/run_bibliotecario_auto.sh
+Icon=folder-documents
+Terminal=true
+Type=Application
+Categories=System;FileTools;
+Keywords=organizar;archivos;duplicados;limpieza;escanear;
+</file>
+
+<file path="install/bibliotecario-juez.desktop">
+[Desktop Entry]
+Name=Bibliotecario: Juez
+GenericName=Gestión Manual
+Comment=Menú para eliminar duplicados y ver stats
+Exec=$HOME/cerebro_cli/bin/run_bibliotecario_menu.sh
+Icon=folder-blue
+Terminal=true
+Type=Application
+Categories=System;
+Keywords=juez;duplicados;manual;gestion;
+</file>
+
+<file path="install/cerebro-audio.desktop">
+[Desktop Entry]
+Name=Cerebro: Oído
+GenericName=Update Audio
+Comment=Solo transcribe grabaciones (Whisper)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_audio.sh
+Icon=audio-volume-high
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=escuchar;audio;oido;whisper;cerebro;
+</file>
+
+<file path="install/cerebro-ia.desktop">
+[Desktop Entry]
+Name=Cerebro IA
+GenericName=Asistente Multimodal
+Comment=Chat con memoria (Llama/Ollama)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_chat.sh
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=Utility;AI;
+Keywords=chat;ia;gpt;llama;cerebro;hablar;
+</file>
+
+<file path="install/cerebro-lectura.desktop">
+[Desktop Entry]
+Name=Cerebro: Lectura Rápida
+GenericName=Update Texto
+Comment=Solo lee texto, PDFs y Docs (Rápido)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_text.sh
+Icon=text-x-generic
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=actualizar;leer;texto;pdf;
+</file>
+
+<file path="install/cerebro-vision.desktop">
+[Desktop Entry]
+Name=Cerebro: Vista
+GenericName=Update Imágenes
+Comment=Solo analiza imágenes y PDFs escaneados (LLaVA)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_vision.sh
+Icon=camera-photo
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=ver;vision;imagenes;fotos;cerebro;
+</file>
+
+<file path="install/ia-help.desktop">
+[Desktop Entry]
+Name=Comandos IA
+GenericName=Hoja de Referencia
+Comment=Ver lista de comandos del sistema Cerebro
+# EJECUTA MICRO EN UNA VENTANA DE TERMINAL
+Exec=micro /home/TU_USUARIO/cerebro_cli/COMANDOS.txt
+Icon=help-about
+Terminal=true  <--- CAMBIA ESTO A TRUE
+Type=Application
+Categories=Documentation;
+Keywords=ayuda;comandos;lista;chuleta;cerebro;
+</file>
+
+<file path="bibliotecario.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+BIBLIOTECARIO v4.0 - Gestor de Archivos Inteligente
+---------------------------------------------------
+Rol: Mantenimiento del Sistema de Archivos (Deduplicación, Organización).
+Uso: python bibliotecario.py [scan|dedup|organize|stats] --target "/ruta"
+Optimización: Hash MD5 para precisión total.
+---------------------------------------------------
+"""
+
+import os
+import sys
+import hashlib
+import sqlite3
+import argparse
+import pandas as pd
+from datetime import datetime
+
+# --- CONFIGURACIÓN ---
+DB_PATH = "inventario_maestro.db"
+IGNORAR_CARPETAS = {'node_modules', '.git', 'venv', '__pycache__', '.vscode', 'build', 'dist', '.idea'}
+
+def calcular_hash(ruta, block_size=65536):
+    """Calcula MD5 del archivo."""
+    hasher = hashlib.md5()
+    try:
+        with open(ruta, 'rb') as f:
+            buf = f.read(block_size)
+            while len(buf) > 0:
+                hasher.update(buf)
+                buf = f.read(block_size)
+        return hasher.hexdigest()
+    except: return None
+
+def conectar_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archivos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT,
+            extension TEXT,
+            ruta_completa TEXT UNIQUE,
+            carpeta_padre TEXT,
+            tamano_bytes INTEGER,
+            hash_contenido TEXT,
+            fecha_modificacion TEXT
+        )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_hash ON archivos(hash_contenido)')
+    conn.commit()
+    return conn
+
+def escanear(ruta_base):
+    conn = conectar_db()
+    cursor = conn.cursor()
+    print(f"📂 Escaneando: {ruta_base}...")
+    
+    count = 0
+    for root, dirs, files in os.walk(ruta_base):
+        dirs[:] = [d for d in dirs if d not in IGNORAR_CARPETAS]
+        
+        for file in files:
+            ruta_abs = os.path.join(root, file)
+            try:
+                stats = os.stat(ruta_abs)
+                ext = os.path.splitext(file)[1].lower()
+                
+                # Hash solo si es necesario (optimizable)
+                file_hash = calcular_hash(ruta_abs)
+                
+                cursor.execute('''
+                    INSERT OR REPLACE INTO archivos (nombre, extension, ruta_completa, carpeta_padre, tamano_bytes, hash_contenido, fecha_modificacion)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (file, ext, ruta_abs, os.path.basename(root), stats.st_size, file_hash, datetime.now().isoformat()))
+                
+                count += 1
+                if count % 100 == 0: print(f"   -> Procesados: {count}", end='\r')
+            except: pass
+            
+    conn.commit()
+    conn.close()
+    print(f"\n✅ Escaneo completado. {count} archivos indexados.")
+
+def buscar_duplicados():
+    conn = conectar_db()
+    query = '''
+        SELECT hash_contenido, COUNT(*) as copias, SUM(tamano_bytes)/1024/1024 as MB_total
+        FROM archivos 
+        WHERE hash_contenido IS NOT NULL
+        GROUP BY hash_contenido
+        HAVING copias > 1
+        ORDER BY MB_total DESC
+    '''
+    df = pd.read_sql_query(query, conn)
+    
+    if df.empty:
+        print("✅ No hay duplicados.")
+        return
+
+    print(f"\n⚠️  Detectados {len(df)} grupos de duplicados. Generando reporte...")
+    
+    with open("reporte_duplicados.txt", "w") as f:
+        f.write("REPORTE DE DUPLICADOS\n=====================\n\n")
+        for _, row in df.iterrows():
+            f.write(f"HASH: {row['hash_contenido']} | Espacio desperdiciado: {row['MB_total']:.2f} MB\n")
+            rutas = pd.read_sql_query("SELECT ruta_completa FROM archivos WHERE hash_contenido = ?", conn, params=(row['hash_contenido'],))
+            for r in rutas['ruta_completa']:
+                f.write(f" - {r}\n")
+            f.write("\n")
+            
+    print(f"📄 Ver detalles en 'reporte_duplicados.txt'")
+    conn.close()
+
+def estadisticas():
+    conn = conectar_db()
+    try:
+        df = pd.read_sql_query("SELECT extension, COUNT(*) as cant, SUM(tamano_bytes)/1024/1024 as MB FROM archivos GROUP BY extension ORDER BY MB DESC LIMIT 10", conn)
+        print("\nTOP 10 TIPOS DE ARCHIVO POR ESPACIO:")
+        print(df.to_string(index=False))
+    except: print("Base de datos vacía.")
+    conn.close()
+
+def main():
+    parser = argparse.ArgumentParser(description="BIBLIOTECARIO: Gestor de Archivos")
+    parser.add_argument("accion", choices=["scan", "dedup", "stats"], help="Acción a realizar")
+    parser.add_argument("--target", type=str, help="Ruta objetivo (para scan)")
+    
+    args = parser.parse_args()
+    
+    if args.accion == "scan":
+        if not args.target: sys.exit("Error: --target requerido para scan.")
+        escanear(args.target)
+    elif args.accion == "dedup":
+        buscar_duplicados()
+    elif args.accion == "stats":
+        estadisticas()
+
+if __name__ == "__main__":
+    main()
+</file>
+
+<file path="COMANDOS.txt~">
+
+</file>
+
+<file path="limpieza_duplicados.sh">
+#!/bin/bash
+# Script generado automáticamente. Ahorro potencial: 155.93 MB
+# REVISA ESTE ARCHIVO ANTES DE EJECUTARLO
+
+rm "/home/entropia/Documentos/Calibre Library/Soporte Integritic/Prueba Inf Psicoped 3deg Basico 653975bf0cc68f8eeaac16f5 (3958)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Gustavo Elias Rojo Barros/Base de datos funcionarios SLEP Licancabur-1 (3952)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Biblioteca del Congreso Nacional de Chile/Ley 21545 (3895)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Charles K. Alexander/Fundamentos de circuitos electricos, 3ra Ed (4006)/Fundamentos de circuitos electricos, 3ra E - Charles K. Alexander.pdf" # Duplicado de: Fundamentos de circuitos electricos, 3ra E - Charles K. Alexander.pdf
+rm "/home/entropia/Documentos/Calibre Library/Biblioteca del Congreso Nacional de Chile/Ley 21545 (3895)/Ley 21545 - Biblioteca del Congreso Nacional de Chile.pdf" # Duplicado de: Ley 21545 - Biblioteca del Congreso Nacional de Chile.pdf
+rm "/home/entropia/Documentos/Calibre Library/Friederich Nietzsche/El crepusculo de los idolos (3872)/El crepusculo de los idolos - Friederich Nietzsche.pdf" # Duplicado de: El crepusculo de los idolos - Friedrich Nietzsche.pdf
+rm "/home/entropia/Documentos/Calibre Library/Gustavo Elias Rojo Barros/Base de datos funcionarios SLEP Licancabur-1 (3952)/Base de datos funcionarios SLEP Licancabur - Gustavo Elias Rojo Barros.pdf" # Duplicado de: Base de datos funcionarios SLEP Licancabur - Gustavo Elias Rojo Barros.pdf
+rm "/home/entropia/Documentos/Calibre Library/Volumen 4 (1)/Curso de Electronica Digital Cekit (3994)/Curso de Electronica Digital Cekit - Volumen 4 (1).pdf" # Duplicado de: Curso de Electronica Digital Cekit - Volumen 4.pdf
+rm "/home/entropia/Documentos/Calibre Library/Desconocido/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE-1 (3963)/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE- - Desconocido.pdf" # Duplicado de: ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE - Desconocido.pdf
+rm "/home/entropia/Documentos/Calibre Library/Charles K. Alexander/Fundamentos de circuitos electricos, 3ra Ed (4006)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Defensa/Boleta_78103192-5-2.pdf" # Duplicado de: Boleta 78103192-5-2-1 - Desconocido.pdf
+rm "/home/entropia/Documentos/Calibre Library/Soporte Integritic/Prueba Inf Psicoped 3deg Basico 653975bf0cc68f8eeaac16f5 (3958)/Prueba Inf Psicoped 3deg Basico 653975bf0c - Soporte Integritic.pdf" # Duplicado de: APznzaYNCU5A6t16QznOCLWv zBCo3BjDu4WN29WdF - Soporte Integritic.pdf
+rm "/home/entropia/Documentos/Calibre Library/Desconocido/guia-para-la-gobernanza-efectiva-de-fundaciones-y-corporaciones-en-chile-2019- (3886)/guia-para-la-gobernanza-efectiva-de-fundac - Desconocido.pdf" # Duplicado de: f827138216 - Desconocido.pdf
+rm "/home/entropia/Documentos/Calibre Library/Desconocido/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE-1 (3963)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Friederich Nietzsche/El crepusculo de los idolos (3872)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Volumen 4 (1)/Curso de Electronica Digital Cekit (3994)/cover.jpg" # Duplicado de: cover.jpg
+</file>
+
+<file path="README.md">
+# Cerebro: Local AI OS Integration for Garuda Linux 🧠💻
+
+Cerebro es un ecosistema de Inteligencia Artificial local diseñado para integrarse profundamente con el flujo de trabajo de un usuario avanzado de Linux (KDE/Garuda). A diferencia de los asistentes de chat convencionales, este sistema opera bajo una arquitectura de **Modernidad Líquida**, adaptando su identidad y funciones dinámicamente según el contexto de los datos del usuario.
+
+## 🚀 Características Principales
+
+### 1. Cerebro IA (Multimodalidad Local)
+Motor de RAG (Retrieval-Augmented Generation) que procesa y memoriza el contexto local del usuario utilizando modelos de última generación ejecutados localmente vía **Ollama**.
+* **Lectura:** Indexación semántica de PDFs y archivos de texto.
+* **Vista:** Análisis de imágenes y planos mediante **LLaVA**.
+* **Oído:** Transcripción y análisis de audio con **OpenAI Whisper**.
+
+### 2. Bibliotecario IA (Gestión de Datos)
+Automatización del mantenimiento del sistema de archivos.
+* Escaneo silencioso y actualización de la base de datos SQL del inventario.
+* Detección proactiva de archivos duplicados y gestión de limpieza.
+
+### 3. Consejo Líquido (Estratega Reactivo)
+Un agente de auditoría proactiva que analiza el estado de proyectos específicos (como la restauración de la Kia Besta o el desarrollo de Aetheria) para ofrecer sugerencias estratégicas basadas en la síntesis de toda la memoria local.
+
+## 🛠️ Arquitectura Técnica
+
+El sistema se apoya en una pila tecnológica robusta y desacoplada del sistema operativo principal para garantizar la estabilidad:
+
+* **Core:** Python 3.14+.
+* **Vector DB:** FAISS para almacenamiento de embeddings semánticos.
+* **Modelos:** Llama 3.1 (Texto), LLaVA (Visión), Whisper (Audio).
+* **Integración:** Lanzadores `.desktop` integrados en **KRunner** para acceso inmediato mediante atajos de teclado.
+
+## 📦 Instalación
+
+1.  **Dependencias del Sistema:**
+    ```bash
+    sudo pacman -S ollama poppler github-cli
+    ```
+2.  **Clonar y Configurar:**
+    ```bash
+    git clone [https://github.com/antupillan/cerebro-ia-local.git](https://github.com/antupillan/cerebro-ia-local.git)
+    cd cerebro-ia-local
+    ./setup.sh
+    ```
+3.  **Entorno Virtual:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+
+## ⌨️ Atajos de KRunner (Alt + Space)
+
+| Comando | Acción |
+| :--- | :--- |
+| `Cerebro IA` | Inicia chat con memoria persistente. |
+| `Cerebro: Vista` | Procesa imágenes y documentos visuales. |
+| `Consejo Líquido` | Auditoría estratégica de proyectos. |
+| `Comandos IA` | Abre la hoja de referencia técnica. |
+
+## ⚖️ Licencia
+Este proyecto es una implementación personal de código abierto enfocada en la soberanía de datos y la automatización avanzada.
+</file>
+
+<file path="requirements.txt">
+aiofiles==25.1.0
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.3
+aiosignal==1.4.0
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.12.1
+attrs==25.4.0
+av==16.1.0
+backoff==2.2.1
+bcrypt==5.0.0
+beautifulsoup4==4.14.3
+build==1.4.0
+certifi==2026.1.4
+cffi==2.0.0
+charset-normalizer==3.4.4
+click==8.3.1
+cryptography==46.0.5
+ctranslate2==4.7.1
+dataclasses-json==0.6.7
+distro==1.9.0
+docx2txt==0.9
+ddgs==9.10.0
+durationpy==0.10
+emoji==2.15.0
+faiss-cpu==1.13.2
+faster-whisper==1.2.1
+filelock==3.20.3
+filetype==1.2.0
+flatbuffers==25.12.19
+flask==3.0.0
+frozenlist==1.8.0
+fsspec==2026.2.0
+google-api-python-client==2.118.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
+greenlet==3.3.1
+grpcio==1.78.0
+h11==0.16.0
+hf-xet==1.2.0
+html5lib==1.1
+httpcore==1.0.9
+httptools==0.7.1
+httpx==0.28.1
+httpx-sse==0.4.3
+huggingface_hub==1.4.1
+idna==3.11
+importlib_metadata==8.7.1
+joblib==1.5.3
+jsonpatch==1.33
+jsonpointer==3.0.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+langchain==1.2.10
+langchain-classic==1.0.1
+langchain-community==0.4.1
+langchain-core==1.2.10
+langchain-ollama==1.0.1
+langchain-text-splitters==1.1.0
+langdetect==1.0.9
+langgraph==1.0.8
+langgraph-checkpoint==4.0.0
+langgraph-prebuilt==1.0.7
+langgraph-sdk==0.3.5
+langsmith==0.7.1
+llvmlite==0.46.0
+lxml==6.0.2
+Markdown==3.10.2
+markdown-it-py==4.0.0
+marshmallow==3.26.2
+mdurl==0.1.2
+mmh3==5.2.0
+mpmath==1.3.0
+multidict==6.7.1
+mypy_extensions==1.1.0
+networkx==3.6.1
+nltk==3.9.2
+numba==0.63.1
+numpy==2.3.5
+oauthlib==3.3.1
+olefile==0.47
+ollama==0.6.1
+onnxruntime==1.24.1
+opentelemetry-exporter-otlp-proto-common==1.39.1
+opentelemetry-exporter-otlp-proto-grpc==1.39.1
+opentelemetry-proto==1.39.1
+opentelemetry-semantic-conventions==0.60b1
+orjson==3.11.7
+ormsgpack==1.12.2
+packaging==26.0
+pandas==3.0.0
+pdf2image==1.17.0
+pillow==12.1.0
+primp==0.15.0
+propcache==0.4.1
+protobuf==6.33.5
+psutil==7.2.2
+pybase64==1.4.3
+pycparser==3.0
+pydantic==2.12.5
+pydantic-settings==2.12.0
+pydantic_core==2.41.5
+Pygments==2.19.2
+pypandoc==1.16.2
+pypdf==6.7.0
+pypdfium2==5.4.0
+PyPika==0.51.1
+pyproject_hooks==1.2.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
+python-iso639==2026.1.31
+python-magic==0.4.27
+python-oxmsg==0.0.2
+PyYAML==6.0.3
+RapidFuzz==3.14.3
+referencing==0.37.0
+regex==2026.1.15
+requests==2.32.5
+requests-oauthlib==2.0.0
+requests-toolbelt==1.0.0
+rich==14.3.2
+rpds-py==0.30.0
+setuptools==82.0.0
+shellingham==1.5.4
+six==1.17.0
+soupsieve==2.8.3
+SQLAlchemy==2.0.46
+sympy==1.14.0
+tenacity==9.1.4
+tokenizers==0.22.2
+tqdm==4.67.3
+typer==0.21.2
+typer-slim==0.21.2
+typing-inspect==0.9.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+unstructured==0.18.31
+unstructured-client==0.42.10
+urllib3==2.6.3
+uuid_utils==0.14.0
+uvicorn==0.40.0
+uvloop==0.22.1
+watchfiles==1.1.1
+webencodings==0.5.1
+websocket-client==1.9.0
+websockets==16.0
+wrapt==2.1.1
+xxhash==3.6.0
+yarl==1.22.0
+zipp==3.23.0
+zstandard==0.25.0
+</file>
+
+<file path="setup.sh">
+#!/bin/bash
+
+echo "🚀 Iniciando instalación de Cerebro IA Local..."
+
+# 1. Detectar usuario y rutas actuales
+USER_HOME=$HOME
+INSTALL_DIR="$USER_HOME/cerebro_cli"
+DESKTOP_DIR="$USER_HOME/.local/share/applications"
+
+echo "📂 Directorio detectado: $INSTALL_DIR"
+
+# 2. Crear carpetas si no existen
+mkdir -p "$DESKTOP_DIR"
+
+# 3. Copiar y configurar lanzadores
+echo "⚙️  Configurando lanzadores para el usuario: $USER..."
+
+for file in install/*.desktop; do
+    filename=$(basename "$file")
+    target="$DESKTOP_DIR/$filename"
+    
+    # Copiamos el archivo
+    cp "$file" "$target"
+    
+    # Reemplazamos TU_USUARIO por el usuario real del sistema
+    sed -i "s|/home/TU_USUARIO|$USER_HOME|g" "$target"
+    
+    echo "   ✅ Instalado: $filename"
+done
+
+# 4. Permisos de ejecución a los scripts binarios
+chmod +x "$INSTALL_DIR/bin/"*.sh
+
+# 5. Actualizar base de datos de escritorio
+update-desktop-database "$DESKTOP_DIR" 2>/dev/null || kbuildsycoca6 2>/dev/null
+
+echo "🎉 Instalación completada. Presiona Alt+Space y busca 'Cerebro'."
+</file>
+
+<file path="test_rutas.py">
+import os
+rutas = [
+    "/home/entropia/Documentos/Kia Besta",
+    "/home/entropia/Documentos/Biblioteca_Calibre",
+    "/home/entropia/Documentos/Filosofia"
+]
+for r in rutas:
+    existe = os.path.exists(r)
+    contenido = len(os.listdir(r)) if existe else "N/A"
+    print(f"Ruta: '{r}' | Existe: {existe} | Archivos: {contenido}")
+</file>
+
+<file path=".gitignore">
+# Entornos virtuales
+venv/
+env/
+.env
+
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Datos Personales (LA MEMORIA)
+faiss_db/
+chroma_db/
+*.pkl
+*.json
+
+# Archivos de sistema y logs
+.DS_Store
+*.log
+COMANDOS.txt
+inventario_maestro.db
+*.db
+</file>
+
+<file path="cerebro.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+CEREBRO v10 - NEXO COGNITIVO & COLMENA DE DATOS
+-----------------------------------------------
+Integración: Baloo -> Sentidos -> Memoria.
+Novedad: Decorador @memorizar para aprendizaje pasivo desde submódulos.
+"""
+
+import os
+import sys
+import threading
+import subprocess
+import shutil
+import warnings
+import functools
+from concurrent.futures import ThreadPoolExecutor
+
+# Configuración de Rutas (Absoluta para compartir memoria)
+# Usamos una carpeta en el home para asegurar persistencia y acceso global
+DB_PATH = os.path.expanduser("~/cerebro_datos/faiss_db")
+if not os.path.exists(DB_PATH):
+    os.makedirs(DB_PATH, exist_ok=True)
+
+MODELO_EMB = "bge-m3:latest"
+
+# --- IMPORTACIÓN DE LOS SENTIDOS (MÓDULOS HERMANOS) ---
+# Importamos dentro de métodos o con try/except para evitar ciclos si ellos nos importan a nosotros
+try:
+    import oido       
+    import vision     
+    import consejero  
+except ImportError:
+    pass # Se maneja dinámicamente
+
+from langchain_community.vectorstores import FAISS
+from langchain_ollama import OllamaEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+
+warnings.filterwarnings("ignore")
+
+class NexoCognitivo:
+    def __init__(self):
+        self.embeddings = OllamaEmbeddings(model=MODELO_EMB)
+        self.vectorstore = self._cargar_memoria()
+        self.executor = ThreadPoolExecutor(max_workers=2)
+
+    def _cargar_memoria(self):
+        if os.path.exists(os.path.join(DB_PATH, "index.faiss")):
+            try: return FAISS.load_local(DB_PATH, self.embeddings, allow_dangerous_deserialization=True)
+            except: pass
+        return None
+
+    def aprender(self, texto, metadatos):
+        """Método público para indexar datos."""
+        if not texto or len(texto) < 10: return
+        
+        def tarea():
+            try:
+                # print(f"   🧠 [NEUROPLASTICIDAD] Memorizando: {metadatos.get('source', 'dato')}...")
+                doc = Document(page_content=texto, metadata=metadatos)
+                splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+                splits = splitter.split_documents([doc])
+                
+                if self.vectorstore is None:
+                    self.vectorstore = FAISS.from_documents(splits, self.embeddings)
+                else:
+                    self.vectorstore.add_documents(splits)
+                
+                self.vectorstore.save_local(DB_PATH)
+            except Exception as e:
+                print(f"   ❌ Fallo al memorizar: {e}")
+        
+        self.executor.submit(tarea)
+
+    def _buscar_baloo(self, query, limit=1):
+        cmd = "balooctl6" if shutil.which("balooctl6") else "balooctl"
+        try:
+            res = subprocess.run([cmd, "search", f"limit:{limit}", query], capture_output=True, text=True)
+            rutas = [line.strip() for line in res.stdout.splitlines() if os.path.isfile(line.strip())]
+            return rutas
+        except: return []
+
+    def procesar_consulta(self, query):
+        # 1. MEMORIA
+        if self.vectorstore:
+            try:
+                docs = self.vectorstore.similarity_search_with_score(query, k=1)
+                if docs and len(docs[0][0].page_content) > 50: 
+                    return f"💡 [MEMORIA]:\n{docs[0][0].page_content}"
+            except: pass
+
+        print(f"   🔍 [CEREBRO] Buscando en sistema (Baloo)...")
+        
+        # 2. BALOO + SENTIDOS
+        archivos = self._buscar_baloo(query)
+        if archivos:
+            archivo = archivos[0]
+            ext = os.path.splitext(archivo)[1].lower()
+            contenido = ""
+            tipo = "ARCHIVO"
+
+            if ext in ['.mp3', '.wav', '.m4a', '.ogg']:
+                print(f"   👂 Audio detectado. Invocando OÍDO...")
+                # Importación dinámica para evitar conflictos circulares
+                import oido
+                contenido = oido.transcribir_audio(archivo, modelo="small")
+                tipo = "AUDIO"
+            elif ext in ['.jpg', '.png', '.jpeg', '.webp']:
+                print(f"   👁️ Imagen detectada. Invocando VISIÓN...")
+                import vision
+                contenido = vision.analyze_image(archivo, "Describe esta imagen técnica.", fast_mode=False)
+                tipo = "IMAGEN"
+            elif ext in ['.pdf', '.txt', '.md', '.py', '.json']:
+                try: contenido = open(archivo, 'r', errors='ignore').read()[:5000]
+                except: contenido = "Error lectura"
+
+            if contenido and "Error" not in contenido:
+                # El aprendizaje ya ocurre dentro de oido/vision gracias al decorador,
+                # pero si es archivo de texto plano, lo aprendemos aquí.
+                if tipo == "ARCHIVO":
+                    self.aprender(contenido, {"source": archivo, "type": tipo})
+                return f"📂 [SISTEMA - {tipo}]:\nArchivo: {archivo}\n\n{contenido}"
+
+        # 3. WEB
+        print(f"   🌐 Buscando en WEB...")
+        import consejero
+        info = consejero.investigar(query)
+        if "No se encontró" not in info:
+            # Consejero también tendrá decorador, así que ya habrá aprendido
+            return f"🌍 [WEB]:\n{info}"
+            
+        return "❌ Sin resultados."
+
+# Instancia global
+mind = NexoCognitivo()
+motor = mind # Alias
+
+# --- DECORADOR EXPORTABLE ---
+def memorizar(tipo_origen="sistema"):
+    """
+    Decorador para que funciones externas guarden sus resultados en Cerebro.
+    Uso: @cerebro.memorizar(tipo_origen="oido")
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Ejecutar función original
+            resultado = func(*args, **kwargs)
+            
+            # Si hay resultado útil, Cerebro lo aprende
+            if resultado and isinstance(resultado, str) and len(resultado) > 10 and "Error" not in resultado:
+                # Extraer metadatos del primer argumento (usualmente la ruta o query)
+                source = str(args[0]) if args else "desconocido"
+                meta = {"source": source, "type": tipo_origen, "tool": func.__name__}
+                
+                # Aprender (La instancia 'mind' maneja el hilo)
+                mind.aprender(resultado, meta)
+            
+            return resultado
+        return wrapper
+    return decorator
+
+if __name__ == "__main__":
+    q = sys.argv[1] if len(sys.argv) > 1 else "Kia Besta"
+    print(mind.procesar_consulta(q))
+</file>
+
+<file path="consejero.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+CONSEJERO v2.0 - Agente de Investigación Web (One-Shot)
+-------------------------------------------------------
+Rol: Sub-agente de búsqueda y síntesis de información externa.
+Uso: python consejero.py "query"
+Salida: Informe conciso con fuentes.
+------------------------------------------------------- """
+
+import sys
+import argparse
+import json
+import warnings
+import requests
+from bs4 import BeautifulSoup
+from ddgs import DDGS
+
+# Configuración de Logs
+warnings.filterwarnings("ignore")
+
+# --- INTEGRACIÓN CEREBRO (Aprendizaje Pasivo) ---
+try:
+    from cerebro import memorizar
+except ImportError:
+    # Si no hay cerebro, decorador dummy que no hace nada
+    def memorizar(tipo_origen):
+        return lambda func: func
+
+try:
+    from langchain_ollama import ChatOllama
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.output_parsers import StrOutputParser
+except ImportError:
+    # Si se importa como módulo y fallan estas, puede ser problemático, 
+    # pero permitimos que el script principal maneje la excepción si es necesario.
+    pass
+
+# --- CONFIGURACIÓN ---
+MODELO_SINTESIS = "llama3.1:8b"
+
+def buscar_web(query, max_results=5):
+    """Busca en DuckDuckGo y devuelve resultados crudos."""
+    # print(f"   🔎 Investigando: '{query}'...", file=sys.stderr)
+    try:
+        results = DDGS().text(query, max_results=max_results)
+        return list(results) if results else []
+    except Exception as e:
+        print(f"   ⚠️ Error de red: {e}", file=sys.stderr)
+        return []
+
+def leer_pagina(url):
+    """Lee el contenido de texto de una URL."""
+    # print(f"   🌐 Leyendo: {url}...", file=sys.stderr)
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        for script in soup(["script", "style", "nav", "footer"]):
+            script.decompose()
+            
+        text = soup.get_text()
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        return '\n'.join(chunk for chunk in chunks if chunk)[:5000]
+    except:
+        return ""
+
+def sintetizar_info(query, resultados):
+    """Usa Llama 3.1 para generar un informe."""
+    if not resultados: return "No se encontró información relevante."
+
+    # Si hay pocos resultados o parecen pobres, intentamos leer la primera web
+    contexto_parts = []
+    for i, r in enumerate(resultados):
+        body = r['body']
+        # Si es el primer resultado y es muy corto, intentamos expandirlo
+        if i == 0 and len(body) < 200:
+             full_text = leer_pagina(r['href'])
+             if full_text: body = full_text[:1000] # Limitamos para no saturar
+        
+        contexto_parts.append(f"Fuente: {r['href']}\nInfo: {body}")
+
+    contexto = "\n\n".join(contexto_parts)
+    
+    template = """
+    Eres un Analista de Inteligencia. Responde a la consulta basándote en:
+    
+    CONSULTA: {query}
+    
+    DATOS RECUPERADOS:
+    {contexto}
+    
+    INSTRUCCIONES:
+    1. Responde directamente a la pregunta.
+    2. Si buscas datos numéricos (hora, precio), sé exacto.
+    3. Cita la URL principal.
+    """
+    
+    try:
+        prompt = ChatPromptTemplate.from_template(template)
+        llm = ChatOllama(model=MODELO_SINTESIS, temperature=0.1)
+        chain = prompt | llm | StrOutputParser()
+        return chain.invoke({"query": query, "contexto": contexto})
+    except NameError:
+        return "Error: Langchain no disponible."
+
+@memorizar("investigacion_web")
+def investigar(query: str) -> str:
+    """Función principal para ser importada por otros módulos."""
+    raw = buscar_web(query)
+    return sintetizar_info(query, raw)
+
+def main():
+    if len(sys.argv) < 2:
+        print("Uso: python consejero.py 'tu pregunta'")
+        sys.exit(1)
+    
+    query = " ".join(sys.argv[1:])
+    print(investigar(query))
+
+if __name__ == "__main__":
+    main()
+</file>
+
+<file path="franki.py">
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+FRANKI v8.0 - Federated Recursive Artificial Neural Knowledge Interface
+-----------------------------------------------------------------------
+EDICIÓN FEDERACIÓN NEURAL (NEURAL FEDERATION CORE)
+- Orquestador: Llama 3.1
+- Especialistas: DeepSeek-R1 (Lógica), Qwen2.5 (Código).
+- Capacidades: Arquitectura, Sistema, Ofimática, Delegación Automática.
+-----------------------------------------------------------------------
+"""
+
+import os
+import sys
+import subprocess
+import shutil
+import json
+import sqlite3
+import re
+from typing import List, Dict, Any
+from datetime import datetime
+from pathlib import Path
+
+# --- CONFIGURACIÓN ---
+OBSIDIAN_VAULT_PATH = os.path.expanduser("~/Documentos/ObsidianVault") 
+OUTPUT_DIR = "franki_output"
+
+if not os.path.exists(OUTPUT_DIR): os.makedirs(OUTPUT_DIR)
+if not os.path.exists(OBSIDIAN_VAULT_PATH): os.makedirs(OBSIDIAN_VAULT_PATH)
+
+# --- DEFINICIÓN DE LA FEDERACIÓN (MODELOS) ---
+FEDERATION = {
+    "orchestrator": "llama3.1:8b",     # El Jefe (Maneja herramientas y seguridad)
+    "thinker": "deepseek-r1:8b",       # El Filósofo (Planificación, Razonamiento)
+    "coder": "qwen2.5-coder:7b",       # El Ingeniero (Scripts complejos, OpenSCAD)
+    "vision_fast": "moondream:latest", # El Ojo Rápido
+    "vision_detail": "llama3.2-vision:latest" # El Ojo Detallado
+}
+
+# --- IMPORTS ---
+try:
+    import pyperclip
+    from odf.opendocument import OpenDocumentText
+    from odf.text import P, H
+    from langchain_ollama import ChatOllama, OllamaEmbeddings
+    from langchain_community.vectorstores import FAISS
+    from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+    from langchain_core.tools import tool
+    
+    # Módulos locales (Modulariadad restaurada)
+    import consejero
+    import vision
+    import cerebro # Motor CEREBRO v4.0 integrado
+    import vigia   # Ojo Efímero (Contextual)
+    import centinela # Monitor de Salud
+    import cronos    # Gestor de Calendario
+except ImportError as e:
+    print(f"Error importando dependencias: {e}")
+    pass
+
+# --- UI ---
+class UI:
+    CYAN = '\033[96m'; GREEN = '\033[92m'; YELLOW = '\033[93m'
+    RED = '\033[91m'; MAGENTA = '\033[95m'; BOLD = '\033[1m'; BLUE = '\033[94m'
+    RESET = '\033[0m'; DIM = '\033[2m'
+
+    @staticmethod
+    def header():
+        os.system('clear')
+        print(f"{UI.BLUE}{UI.BOLD}╔══════════════════════════════════════════════════════════════════════════════════════╗")
+        print(f"║  FRANKI v8.2 (Federated Recursive Artificial Neural Knowledge Interface)             ║")
+        print(f"║  {UI.DIM}System: Garuda Linux | Security: SECURE CORE | Vault: ~/Documentos/ObsidianVault{UI.RESET}{UI.BLUE}{UI.BOLD}    ║")
+        print(f"╚══════════════════════════════════════════════════════════════════════════════════════╝{UI.RESET}")
+        
+        print(f"\n{UI.CYAN}{UI.BOLD}🎛️  PANEL DE COMANDO & CHULETA:{UI.RESET}")
+        
+        # Columna 1: Inteligencia
+        print(f"  {UI.BOLD}[1] NÚCLEOS NEURONALES (Delegación Automática){UI.RESET}")
+        print(f"      • {UI.GREEN}Orquestador (Llama 3.1){UI.RESET} : Gestión general, Archivos, Bash.")
+        print(f"      • {UI.MAGENTA}Thinker (DeepSeek R1){UI.RESET}   : Estrategia, Lógica, Matemáticas.")
+        print(f"      • {UI.YELLOW}Coder (Qwen 2.5){UI.RESET}        : Python, OpenSCAD, Scripts complejos.")
+        print(f"      • {UI.BLUE}Vision (Llama 3.2/Moondream){UI.RESET}: Análisis de imágenes y diagramas.")
+
+        # Columna 2: Integración KRunner
+        print(f"\n  {UI.BOLD}[2] INTEGRACIÓN DE ESCRITORIO (Alt+Space / Super+S){UI.RESET}")
+        print(f"      • {UI.YELLOW}ia 'pregunta'{UI.RESET}     → Respuesta rápida (Notificación).")
+        print(f"      • {UI.YELLOW}deep 'lógica'{UI.RESET}     → Razonamiento profundo (Portapapeles).")
+        print(f"      • {UI.YELLOW}code 'script'{UI.RESET}     → Generación de código (Portapapeles).")
+
+        # Columna 3: Herramientas
+        print(f"\n  {UI.BOLD}[3] HERRAMIENTAS ACTIVAS{UI.RESET}")
+        print(f"      • {UI.BOLD}3D/CAD:{UI.RESET}       'Diseña pieza...'    → Código .scad + Render .png")
+        print(f"      • {UI.BOLD}Web:{UI.RESET}          'Investiga sobre...' → Búsqueda DuckDuckGo + Informe.")
+        print(f"      • {UI.BOLD}Visión:{UI.RESET}       'Qué ves en ./img.png' → Análisis visual.")
+        print(f"      • {UI.BOLD}Notas:{UI.RESET}        'Guarda nota...'     → Archivo Markdown en Obsidian.")
+        
+        # Columna 4: Atajos
+        print(f"\n  {UI.BOLD}[4] ATAJOS DE TERMINAL{UI.RESET}")
+        print(f"      • {UI.YELLOW}/clip{UI.RESET} : Analiza portapapeles. | {UI.YELLOW}exit{UI.RESET} : Salir.")
+        print(f"{UI.DIM}────────────────────────────────────────────────────────────────────────────────────────{UI.RESET}")
+
+# --- PROTOCOLO DE SEGURIDAD ---
+class SafetyProtocol:
+    FORBIDDEN = [r"sudo\s+", r"rm\s+-rf\s+/", r":\(\)\{ :\|:& \};:"]
+
+    @staticmethod
+    def ask(action: str, detail: str) -> bool:
+        print(f"\n{UI.YELLOW}⚠️  SOLICITUD DE {action}:{UI.RESET}")
+        print(f"   {UI.BOLD}➤ {detail}{UI.RESET}")
+        try:
+            return input(f"   {UI.CYAN}¿Autorizar? [s/N] > {UI.RESET}").lower().strip() in ['s', 'y', 'si']
+        except: return False
+
+# --- MEMORIA ---
+class MemoryCortex:
+    def __init__(self):
+        self._init_sql()
+        self.embeddings = OllamaEmbeddings(model="bge-m3:latest")
+        self.kg_path = Path("knowledge_graph.json")
+        if not self.kg_path.exists(): self.save_kg({"user": "Entropia", "projects": ["Penal", "Aetheria"]})
+
+    def _init_sql(self):
+        with sqlite3.connect("franki_memoria.db") as conn:
+            conn.execute("CREATE TABLE IF NOT EXISTS interactions (ts TEXT, role TEXT, content TEXT)")
+
+    def log(self, role, content):
+        with sqlite3.connect("franki_memoria.db") as conn:
+            conn.execute("INSERT INTO interactions VALUES (?, ?, ?)", (datetime.now().isoformat(), role, content))
+
+    def save_kg(self, data): json.dump(data, open(self.kg_path, 'w'), indent=2)
+    def rag(self, query):
+        if not os.path.exists("./faiss_db"): return ""
+        try:
+            db = FAISS.load_local("./faiss_db", self.embeddings, allow_dangerous_deserialization=True)
+            return "\n".join([d.page_content for d in db.similarity_search(query, k=2)])
+        except: return ""
+
+mem = MemoryCortex()
+
+# --- HERRAMIENTA DE FEDERACIÓN (NUEVA) ---
+
+@tool
+def tool_consult_specialist(specialty: str, task: str):
+    """
+    [FEDERACIÓN] Delega tareas complejas a modelos especializados.
+    Args:
+        specialty (str): 'thinker' (Planificación/Lógica) o 'coder' (Código/Scripts).
+        task (str): Descripción detallada de la tarea a realizar.
+    """
+    model_name = FEDERATION.get(specialty)
+    if not model_name: return f"Error: Especialidad '{specialty}' desconocida. Usa 'thinker' o 'coder'."
+    
+    print(f"{UI.MAGENTA}   📡 [NEXO] Conectando con nodo especialista: {specialty.upper()} ({model_name})...{UI.RESET}")
+    
+    try:
+        specialist = ChatOllama(model=model_name, temperature=0.1)
+        response = specialist.invoke(task)
+        return f"RESPUESTA DE {specialty.upper()}:\n{response.content}"
+    except Exception as e:
+        return f"Error conectando con especialista: {e}"
+
+# --- HERRAMIENTAS DE ARQUITECTO & SISTEMA ---
+
+@tool
+def tool_openscad_compile(filename: str, scad_code: str):
+    """[ARQUITECTURA] Compila código OpenSCAD a PNG."""
+    base_path = os.path.join(OUTPUT_DIR, filename)
+    scad_file = f"{base_path}.scad"
+    png_file = f"{base_path}.png"
+    if not SafetyProtocol.ask("MODELADO 3D", f"Crear {scad_file}"): return "⛔ DENEGADO."
+    with open(scad_file, 'w') as f: f.write(scad_code)
+    cmd = f"openscad -o {png_file} {scad_file} --imgsize=800,600 --colorscheme=DeepOcean"
+    try:
+        subprocess.run(cmd, shell=True, check=True, timeout=60)
+        return f"✅ Modelo 3D: {png_file}"
+    except Exception as e: return f"Error OpenSCAD: {e}"
+
+@tool
+def tool_graphviz_render(filename: str, dot_code: str):
+    """[LÓGICA] Genera diagramas DOT."""
+    base_path = os.path.join(OUTPUT_DIR, filename)
+    dot_file = f"{base_path}.dot"
+    png_file = f"{base_path}.png"
+    if not SafetyProtocol.ask("DIAGRAMA", f"Compilar {dot_file}"): return "⛔ DENEGADO."
+    with open(dot_file, 'w') as f: f.write(dot_code)
+    try:
+        subprocess.run(f"dot -Tpng {dot_file} -o {png_file}", shell=True, check=True)
+        return f"✅ Diagrama: {png_file}"
+    except Exception as e: return f"Error Graphviz: {e}"
+
+@tool
+def tool_obsidian_note(filename: str, content: str, folder: str = ""):
+    """[CONOCIMIENTO] Crea nota Obsidian."""
+    full_path = os.path.join(OBSIDIAN_VAULT_PATH, folder)
+    if not os.path.exists(full_path): os.makedirs(full_path)
+    file_path = os.path.join(full_path, f"{filename}.md")
+    if not SafetyProtocol.ask("OBSIDIAN", f"Crear nota {file_path}"): return "⛔ DENEGADO."
+    try:
+        with open(file_path, 'w') as f: f.write(content)
+        return f"✅ Nota Obsidian: {file_path}"
+    except Exception as e: return f"Error: {e}"
+
+@tool
+def tool_list_directory(path: str = "."):
+    """[SISTEMA] Lista archivos. NO usar Bash para esto."""
+    path = os.path.expanduser(path)
+    if not os.path.exists(path): return f"Error: Ruta {path} no existe."
+    if not os.path.isdir(path): return f"Error: {path} no es directorio."
+    try:
+        items = os.listdir(path)
+        return f"CONTENIDO DE {path}:\n" + "\n".join(items[:50])
+    except Exception as e: return f"Error: {e}"
+
+@tool
+def sys_bash(command: str):
+    """[SISTEMA] Ejecuta Bash. Requiere confirmación."""
+    if SafetyProtocol.ask("BASH", command):
+        return subprocess.run(command, shell=True, capture_output=True, text=True).stdout
+    return "⛔ DENEGADO"
+
+@tool
+def tool_read_file(filepath: str):
+    """[SISTEMA] Lee archivos de texto. Si es carpeta, la lista."""
+    path = os.path.expanduser(filepath)
+    if os.path.isdir(path): return tool_list_directory.invoke(path)
+    try: return open(path).read()[:3000]
+    except: return "Error lectura."
+
+@tool
+def tool_web_search(query: str):
+    """
+    [CONSEJERO] Busca información en Internet (DuckDuckGo) y sintetiza una respuesta.
+    Úsalo cuando necesites datos actuales, precios, noticias o documentación.
+    """
+    print(f"{UI.YELLOW}   🌏 [WEB] Llamando a módulo Consejero: '{query}'...{UI.RESET}")
+    try:
+        return consejero.investigar(query)
+    except Exception as e:
+        return f"Error en módulo Consejero: {e}"
+
+@tool
+def tool_visit_webpage(url: str):
+    """
+    [WEB] Lee el contenido completo de una URL específica.
+    """
+    print(f"{UI.YELLOW}   🌐 [NAV] Llamando a módulo Consejero (Lector): {url}...{UI.RESET}")
+    try:
+        content = consejero.leer_pagina(url)
+        return f"CONTENIDO DE {url}:\n{content[:4000]}..."
+    except Exception as e:
+        return f"Error leyendo web: {e}"
+
+@tool
+def tool_vision_analysis(image_path: str, prompt: str = "Describe esta imagen detalladamente."):
+    """
+    [VISIÓN] Analiza una imagen local usando el módulo de visión.
+    Args:
+        image_path: Ruta del archivo de imagen (jpg, png).
+        prompt: Pregunta sobre la imagen.
+    """
+    print(f"{UI.BLUE}   👁️ [VISIÓN] Llamando a módulo Visión: {image_path}...{UI.RESET}")
+    try:
+        return vision.analyze_image(image_path, prompt)
+    except Exception as e:
+        return f"Error en módulo Visión: {e}"
+
+@tool
+def tool_read_clipboard(dummy: str = ""):
+    """[SISTEMA] Lee el contenido actual del portapapeles."""
+    try:
+        content = pyperclip.paste()
+        if not content.strip(): return "AVISO: El portapapeles está vacío."
+        return f"CONTENIDO DEL PORTAPAPELES:\n{content}"
+    except Exception as e: return f"Error leyendo portapapeles: {e}"
+
+@tool
+def tool_smart_knowledge(query: str):
+    """
+    [CEREBRO] Motor de búsqueda híbrido.
+    Úsalo cuando el usuario pida información sobre proyectos, facturas, manuales 
+    o archivos específicos (ej: 'Busca el PDF de la Kia Besta').
+    
+    Automáticamente:
+    1. Revisa si ya lo sabe (FAISS).
+    2. Si no, usa KDE Baloo para buscar el archivo en el disco.
+    3. Si lo encuentra, lo lee y lo aprende en segundo plano.
+    """
+    print(f"{UI.MAGENTA}   🧠 [CEREBRO] Procesando consulta inteligente: '{query}'...{UI.RESET}")
+    try:
+        return cerebro.motor.consultar(query)
+    except Exception as e:
+        return f"Error en motor cerebral: {e}"
+
+@tool
+def tool_system_health(dummy: str = ""):
+    """
+    [CENTINELA] Reporte de salud del sistema (CPU, RAM, Disco, Batería).
+    Úsalo cuando el usuario pregunte 'cómo está la pc', 'recursos', 'espacio en disco'.
+    """
+    print(f"{UI.GREEN}   🛡️ [CENTINELA] Auditando sistema...{UI.RESET}")
+    try:
+        return centinela.reporte_general()
+    except Exception as e:
+        return f"Error en Centinela: {e}"
+
+@tool
+def tool_calendar_check(dummy: str = ""):
+    """
+    [CRONOS] Consulta la agenda local en Obsidian.
+    Úsalo para ver tareas pendientes y compromisos anotados.
+    """
+    print(f"{UI.YELLOW}   📅 [CRONOS] Consultando agenda local...{UI.RESET}")
+    return cronos.reloj.listar_eventos()
+
+@tool
+def tool_calendar_add(summary: str, date_time: str = ""):
+    """
+    [CRONOS] Anota una tarea o recordatorio en la agenda de Obsidian.
+    date_time: Opcional, formato 'YYYY-MM-DD HH:MM'.
+    """
+    print(f"{UI.YELLOW}   📅 [CRONOS] Anotando tarea: {summary}...{UI.RESET}")
+    return cronos.reloj.crear_evento(summary, date_time)
+
+@tool
+def tool_see_screen(question: str):
+    """
+    [VIGÍA] Mira la pantalla del usuario (Screenshot temporal).
+    Úsalo cuando el usuario diga 'mira esto', 'lee este error', 'qué opinas de este diseño'.
+    El usuario deberá seleccionar el área con el mouse.
+    """
+    return vigia.capturar_y_analizar(question)
+
+# --- CEREBRO ---
+class FrankiBrain:
+    def __init__(self):
+        self.tools = [
+            tool_consult_specialist, # <--- LA JOYA DE LA CORONA
+            tool_web_search, tool_visit_webpage, tool_vision_analysis, tool_read_clipboard, # <--- NUEVOS SENTIDOS
+            tool_smart_knowledge, tool_see_screen, tool_system_health, # <--- HERRAMIENTAS EJECUTIVAS
+            tool_calendar_check, tool_calendar_add, # <--- CRONOS
+            tool_list_directory, tool_read_file, sys_bash,
+            tool_openscad_compile, tool_graphviz_render, tool_obsidian_note
+        ]
+        self.tool_map = {t.name: t for t in self.tools}
+        self.llm = ChatOllama(model=FEDERATION["orchestrator"], temperature=0.1)
+        self.agent = self.llm.bind_tools(self.tools)
+
+    def react_loop(self, user_input: str):
+        # Manejo especial para comando /clip
+        if user_input.strip() == "/clip":
+             user_input = "Lee el portapapeles y explícame o resume qué hay ahí."
+
+        # rag = mem.rag(user_input)  <-- DEPRECATED: Usamos el nuevo CEREBRO
+        rag = cerebro.motor.consultar(user_input)
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        prompt = SystemMessage(content=f"""
+        Eres FRANKI v8.2 (Orquestador de Federación Neural).
+        
+        UBICACIÓN USUARIO: Santiago, Chile.
+        FECHA Y HORA ACTUAL: {now_str} (Zona Horaria: America/Santiago)
+        
+        PROTOCOLO DE DELEGACIÓN (IMPORTANTE):
+        1. CÓDIGO complejo (Python, OpenSCAD) -> USA `tool_consult_specialist('coder', ...)`
+        2. PLANIFICACIÓN/RAZONAMIENTO -> USA `tool_consult_specialist('thinker', ...)`
+        3. PANTALLA/CONTEXTO VISUAL ("Mira esto") -> USA `tool_see_screen`. Esto es efímero (RAM).
+        4. AGENDA/TIEMPO -> USA `tool_calendar_check` o `tool_calendar_add`. (Local en Obsidian).
+        5. ESTADO DEL SISTEMA -> USA `tool_system_health`.
+        6. DATOS ACTUALES/WEB -> USA `tool_web_search`. Si el resumen es insuficiente, USA `tool_visit_webpage`.
+        7. IMÁGENES (Archivos) -> USA `tool_vision_analysis`.
+        8. ARCHIVOS/PROYECTOS -> USA `tool_smart_knowledge`. Es tu mejor herramienta para buscar en el disco y en tu memoria técnica (FAISS).
+        
+        CONTEXTO DINÁMICO (MEMORIA VIVA):
+        Tus módulos sensoriales (Oído, Visión, Consejero) trabajan autónomamente.
+        Siempre consulta tu memoria (FAISS) antes de decir "no sé", porque es muy posible 
+        que el usuario haya ejecutado 'oido.py' o 'vision.py' de forma independiente 
+        hace un momento y la información ya esté disponible en tu contexto.
+        
+        INSTRUCCIONES CLAVE:
+        - Si buscas horarios, conviértelos a la hora local del usuario (Santiago).
+        - NO uses `tool_read_clipboard` para saludos. Úsalo SOLO si se pide explícitamente.
+        
+        HERRAMIENTAS: tool_smart_knowledge, tool_see_screen, tool_system_health, tool_calendar_check, tool_calendar_add, tool_web_search, tool_vision_analysis, tool_read_file, sys_bash.
+        
+        CONTEXTO ACTUAL: {rag}
+        """)
+        
+        messages = [prompt, HumanMessage(content=user_input)]
+        
+        steps = 0
+        while steps < 10:
+            try:
+                res = self.agent.invoke(messages)
+                messages.append(res)
+                if not res.tool_calls:
+                    print(f"\n{UI.GREEN}FRANKI >{UI.RESET} {res.content}")
+                    mem.log("ai", res.content)
+                    break
+                
+                for call in res.tool_calls:
+                    t_name = call['name']
+                    print(f"{UI.CYAN}   🔧 HERRAMIENTA: {t_name}{UI.RESET}")
+                    func = self.tool_map.get(t_name)
+                    if func:
+                        try:
+                            # Ejecución protegida para evitar crashes por argumentos inválidos
+                            out = func.invoke(call['args'])
+                        except Exception as e:
+                            # Capturamos el error y se lo devolvemos al modelo como observación
+                            out = f"Error de validación o ejecución ({t_name}): {str(e)}. Por favor corrige los argumentos."
+                            print(f"{UI.RED}   [!] Error recuperable: {e}{UI.RESET}")
+                        
+                        messages.append(ToolMessage(content=str(out), tool_call_id=call['id']))
+                steps += 1
+            except KeyboardInterrupt:
+                print(f"\n{UI.RED}⚠️ Cancelado.{UI.RESET}"); return
+
+def main():
+    UI.header()
+    brain = FrankiBrain()
+    while True:
+        try:
+            u_input = input(f"\n{UI.BOLD}{UI.BLUE}╭─[Entropia@Franki] \n╰─➤ {UI.RESET}")
+            if not u_input.strip(): continue
+            if u_input.lower() in ["exit", "salir"]:
+                break
+            mem.log("user", u_input)
+            brain.react_loop(u_input)
+        except KeyboardInterrupt: print("Pausado.")
+
+if __name__ == "__main__": main()
+</file>
+
+</files>

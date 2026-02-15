@@ -1,0 +1,23 @@
+#!/bin/bash
+# En KRunner: Alt+Space -> fc crea un script en python...
+
+QUERY="$*"
+notify-send -a "Franki Coder" "Generando código..." "$QUERY" -i application-x-python
+
+RESPONSE=$(curl -s --max-time 30 -X POST http://127.0.0.1:54321/krunner \
+     -H "Content-Type: application/json" \
+     -d "{\"query\": \"$QUERY\", \"mode\": \"code\"}" | jq -r '.response')
+
+if [ -z "$RESPONSE" ]; then
+    notify-send -a "Franki Coder" "Error" "Sin respuesta del servidor." -i dialog-error
+    exit 1
+fi
+
+# Copiar al portapapeles automáticamente (Wayland/X11 safe)
+if command -v wl-copy &> /dev/null; then
+    echo "$RESPONSE" | wl-copy
+elif command -v xclip &> /dev/null; then
+    echo "$RESPONSE" | xclip -selection clipboard
+fi
+
+notify-send -a "Franki Coder" "¡Listo!" "Código copiado al portapapeles." -i edit-copy
