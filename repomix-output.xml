@@ -82,6 +82,7 @@ oido.py
 README.md
 requirements.txt
 setup.sh
+TEMPLATE_COCREACION.md
 test_rutas.py
 vigia.py
 vision.py
@@ -89,6 +90,41 @@ vision.py
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="TEMPLATE_COCREACION.md">
+---
+tipo: proyecto
+estado: borrador
+fecha: 2026-02-14
+contexto: "Tema del proyecto"
+tags: [ingenieria, franki_v10, co-creacion]
+---
+
+# Título del Documento
+
+## 1. Contexto Humano (Input)
+<!-- Escribe aquí tu idea base, requerimientos o notas. -->
+> Escribe aquí tu premisa inicial. Quiero solucionar X problema...
+
+## 2. Zona de Intervención de Franki (Análisis)
+<!-- No escribas aquí. Franki rellenará este bloque manteniendo el contexto anterior. -->
+
+<franki-analysis>
+[Esperando input para procesar...]
+</franki-analysis>
+
+## 3. Código y Ejecución
+<!-- Implementación técnica sugerida -->
+
+```python
+# Espacio reservado para scripts o configuración
+pass
+```
+
+## 4. Notas Ocultas (Canal Privado)
+<!-- Usa esto para dar instrucciones al LLM que no quieres en el doc final -->
+<!-- franki: por favor verifica la termodinámica de la propuesta -->
+</file>
 
 <file path="bin/code">
 #!/bin/bash
@@ -112,6 +148,161 @@ python franki_krunner.py deep "$*"
 source /home/entropia/cerebro_cli/venv/bin/activate
 cd /home/entropia/cerebro_cli
 python franki_krunner.py fast "$*"
+</file>
+
+<file path="bin/run_bibliotecario_auto.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "🕵️ Escaneo rápido de archivos en curso..."
+python bibliotecario.py --auto
+read -p "Inventario actualizado. Enter para salir..."
+</file>
+
+<file path="bin/run_bibliotecario_menu.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python bibliotecario.py
+read -p "Gestión terminada. Enter para salir..."
+</file>
+
+<file path="bin/run_bibliotecario.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python bibliotecario.py
+read -p "Presiona Enter para cerrar..."
+</file>
+
+<file path="bin/run_cerebro_chat.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python cerebro.py
+read -p "Cierre de sesión. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro_full.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "👁️👂 Procesando Multimedia (Imágenes y Audio)..."
+python cerebro.py --vision --audio
+read -p "Procesamiento sensorial terminado. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro_text.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "📚 Actualizando lecturas (Texto, PDF, Docs)..."
+python cerebro.py --texto
+read -p "Lectura completada. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro_vision.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+echo "👁️ Analizando Imágenes y PDFs escaneados..."
+python cerebro.py --vision
+read -p "Análisis visual completado. Enter para salir..."
+</file>
+
+<file path="bin/run_cerebro.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python cerebro.py
+# Pausa al final por si hay error, para poder leerlo
+read -p "Presiona Enter para cerrar..."
+</file>
+
+<file path="bin/run_consejero.sh">
+#!/bin/bash
+cd /home/entropia/cerebro_cli
+source venv/bin/activate
+python consejero.py
+read -p "Sesión estratégica finalizada. Enter para salir..."
+</file>
+
+<file path="install/bibliotecario-ia.desktop">
+[Desktop Entry]
+Name=Bibliotecario IA
+GenericName=Organizador de Archivos
+Comment=Escaneo automático y organización
+Exec=$HOME/cerebro_cli/bin/run_bibliotecario_auto.sh
+Icon=folder-documents
+Terminal=true
+Type=Application
+Categories=System;FileTools;
+Keywords=organizar;archivos;duplicados;limpieza;escanear;
+</file>
+
+<file path="install/bibliotecario-juez.desktop">
+[Desktop Entry]
+Name=Bibliotecario: Juez
+GenericName=Gestión Manual
+Comment=Menú para eliminar duplicados y ver stats
+Exec=$HOME/cerebro_cli/bin/run_bibliotecario_menu.sh
+Icon=folder-blue
+Terminal=true
+Type=Application
+Categories=System;
+Keywords=juez;duplicados;manual;gestion;
+</file>
+
+<file path="install/cerebro-audio.desktop">
+[Desktop Entry]
+Name=Cerebro: Oído
+GenericName=Update Audio
+Comment=Solo transcribe grabaciones (Whisper)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_audio.sh
+Icon=audio-volume-high
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=escuchar;audio;oido;whisper;cerebro;
+</file>
+
+<file path="install/cerebro-ia.desktop">
+[Desktop Entry]
+Name=Cerebro IA
+GenericName=Asistente Multimodal
+Comment=Chat con memoria (Llama/Ollama)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_chat.sh
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=Utility;AI;
+Keywords=chat;ia;gpt;llama;cerebro;hablar;
+</file>
+
+<file path="install/cerebro-lectura.desktop">
+[Desktop Entry]
+Name=Cerebro: Lectura Rápida
+GenericName=Update Texto
+Comment=Solo lee texto, PDFs y Docs (Rápido)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_text.sh
+Icon=text-x-generic
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=actualizar;leer;texto;pdf;
+</file>
+
+<file path="install/cerebro-vision.desktop">
+[Desktop Entry]
+Name=Cerebro: Vista
+GenericName=Update Imágenes
+Comment=Solo analiza imágenes y PDFs escaneados (LLaVA)
+Exec=$HOME/cerebro_cli/bin/run_cerebro_vision.sh
+Icon=camera-photo
+Terminal=true
+Type=Application
+Categories=Utility;
+Keywords=ver;vision;imagenes;fotos;cerebro;
 </file>
 
 <file path="install/f">
@@ -211,6 +402,20 @@ Environment=XAUTHORITY=/home/entropia/.Xauthority
 WantedBy=default.target
 </file>
 
+<file path="install/ia-help.desktop">
+[Desktop Entry]
+Name=Comandos IA
+GenericName=Hoja de Referencia
+Comment=Ver lista de comandos del sistema Cerebro
+# EJECUTA MICRO EN UNA VENTANA DE TERMINAL
+Exec=micro /home/TU_USUARIO/cerebro_cli/COMANDOS.txt
+Icon=help-about
+Terminal=true  <--- CAMBIA ESTO A TRUE
+Type=Application
+Categories=Documentation;
+Keywords=ayuda;comandos;lista;chuleta;cerebro;
+</file>
+
 <file path="centinela.py">
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -279,6 +484,10 @@ if __name__ == "__main__":
     print(reporte_general())
 </file>
 
+<file path="COMANDOS.txt~">
+
+</file>
+
 <file path="cronos.py">
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-"""
@@ -291,6 +500,14 @@ Capacidades: Leer, escribir y PARSEAR Agenda.md de Obsidian.
 import os
 import datetime
 import re
+
+# --- INTEGRACIÓN CEREBRO (Aprendizaje Pasivo) ---
+try:
+    from cerebro import memorizar
+except ImportError:
+    # Si no hay cerebro, decorador dummy
+    def memorizar(tipo_origen):
+        return lambda func: func
 
 # Ruta a tu carpeta de Obsidian
 OBSIDIAN_VAULT_PATH = os.path.expanduser("~/Documentos/ObsidianVault")
@@ -317,6 +534,7 @@ class CronosLocal:
             return "📅 AGENDA LOCAL (Obsidian):\n" + "\n".join(pendientes[:max_results])
         except Exception as e: return f"Error: {e}"
 
+    @memorizar("AGENDA")
     def crear_evento(self, resumen, fecha_hora_iso):
         """Añade una tarea. Formato esperado fecha: YYYY-MM-DD HH:MM"""
         try:
@@ -326,7 +544,7 @@ class CronosLocal:
             nueva_tarea = f"- [ ] {timestamp} | {resumen}\n"
             with open(AGENDA_PATH, "a", encoding='utf-8') as f:
                 f.write(nueva_tarea)
-            return f"✅ Tarea anotada: {resumen}"
+            return f"✅ Tarea anotada: {resumen} ({timestamp})"
         except Exception as e: return f"Error: {e}"
 
     def obtener_eventos_raw(self):
@@ -640,6 +858,29 @@ if __name__ == '__main__':
     app.run(host='127.0.0.1', port=54321, threaded=True)
 </file>
 
+<file path="limpieza_duplicados.sh">
+#!/bin/bash
+# Script generado automáticamente. Ahorro potencial: 155.93 MB
+# REVISA ESTE ARCHIVO ANTES DE EJECUTARLO
+
+rm "/home/entropia/Documentos/Calibre Library/Soporte Integritic/Prueba Inf Psicoped 3deg Basico 653975bf0cc68f8eeaac16f5 (3958)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Gustavo Elias Rojo Barros/Base de datos funcionarios SLEP Licancabur-1 (3952)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Biblioteca del Congreso Nacional de Chile/Ley 21545 (3895)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Charles K. Alexander/Fundamentos de circuitos electricos, 3ra Ed (4006)/Fundamentos de circuitos electricos, 3ra E - Charles K. Alexander.pdf" # Duplicado de: Fundamentos de circuitos electricos, 3ra E - Charles K. Alexander.pdf
+rm "/home/entropia/Documentos/Calibre Library/Biblioteca del Congreso Nacional de Chile/Ley 21545 (3895)/Ley 21545 - Biblioteca del Congreso Nacional de Chile.pdf" # Duplicado de: Ley 21545 - Biblioteca del Congreso Nacional de Chile.pdf
+rm "/home/entropia/Documentos/Calibre Library/Friederich Nietzsche/El crepusculo de los idolos (3872)/El crepusculo de los idolos - Friederich Nietzsche.pdf" # Duplicado de: El crepusculo de los idolos - Friedrich Nietzsche.pdf
+rm "/home/entropia/Documentos/Calibre Library/Gustavo Elias Rojo Barros/Base de datos funcionarios SLEP Licancabur-1 (3952)/Base de datos funcionarios SLEP Licancabur - Gustavo Elias Rojo Barros.pdf" # Duplicado de: Base de datos funcionarios SLEP Licancabur - Gustavo Elias Rojo Barros.pdf
+rm "/home/entropia/Documentos/Calibre Library/Volumen 4 (1)/Curso de Electronica Digital Cekit (3994)/Curso de Electronica Digital Cekit - Volumen 4 (1).pdf" # Duplicado de: Curso de Electronica Digital Cekit - Volumen 4.pdf
+rm "/home/entropia/Documentos/Calibre Library/Desconocido/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE-1 (3963)/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE- - Desconocido.pdf" # Duplicado de: ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE - Desconocido.pdf
+rm "/home/entropia/Documentos/Calibre Library/Charles K. Alexander/Fundamentos de circuitos electricos, 3ra Ed (4006)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Defensa/Boleta_78103192-5-2.pdf" # Duplicado de: Boleta 78103192-5-2-1 - Desconocido.pdf
+rm "/home/entropia/Documentos/Calibre Library/Soporte Integritic/Prueba Inf Psicoped 3deg Basico 653975bf0cc68f8eeaac16f5 (3958)/Prueba Inf Psicoped 3deg Basico 653975bf0c - Soporte Integritic.pdf" # Duplicado de: APznzaYNCU5A6t16QznOCLWv zBCo3BjDu4WN29WdF - Soporte Integritic.pdf
+rm "/home/entropia/Documentos/Calibre Library/Desconocido/guia-para-la-gobernanza-efectiva-de-fundaciones-y-corporaciones-en-chile-2019- (3886)/guia-para-la-gobernanza-efectiva-de-fundac - Desconocido.pdf" # Duplicado de: f827138216 - Desconocido.pdf
+rm "/home/entropia/Documentos/Calibre Library/Desconocido/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE-1 (3963)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Friederich Nietzsche/El crepusculo de los idolos (3872)/cover.jpg" # Duplicado de: cover.jpg
+rm "/home/entropia/Documentos/Calibre Library/Volumen 4 (1)/Curso de Electronica Digital Cekit (3994)/cover.jpg" # Duplicado de: cover.jpg
+</file>
+
 <file path="oido.py">
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -721,6 +962,121 @@ def main():
 
 if __name__ == "__main__":
     main()
+</file>
+
+<file path="README.md">
+# Cerebro: Local AI OS Integration for Garuda Linux 🧠💻
+
+Cerebro es un ecosistema de Inteligencia Artificial local diseñado para integrarse profundamente con el flujo de trabajo de un usuario avanzado de Linux (KDE/Garuda). A diferencia de los asistentes de chat convencionales, este sistema opera bajo una arquitectura de **Modernidad Líquida**, adaptando su identidad y funciones dinámicamente según el contexto de los datos del usuario.
+
+## 🚀 Características Principales
+
+### 1. Cerebro IA (Multimodalidad Local)
+Motor de RAG (Retrieval-Augmented Generation) que procesa y memoriza el contexto local del usuario utilizando modelos de última generación ejecutados localmente vía **Ollama**.
+* **Lectura:** Indexación semántica de PDFs y archivos de texto.
+* **Vista:** Análisis de imágenes y planos mediante **LLaVA**.
+* **Oído:** Transcripción y análisis de audio con **OpenAI Whisper**.
+
+### 2. Bibliotecario IA (Gestión de Datos)
+Automatización del mantenimiento del sistema de archivos.
+* Escaneo silencioso y actualización de la base de datos SQL del inventario.
+* Detección proactiva de archivos duplicados y gestión de limpieza.
+
+### 3. Consejo Líquido (Estratega Reactivo)
+Un agente de auditoría proactiva que analiza el estado de proyectos específicos (como la restauración de la Kia Besta o el desarrollo de Aetheria) para ofrecer sugerencias estratégicas basadas en la síntesis de toda la memoria local.
+
+## 🛠️ Arquitectura Técnica
+
+El sistema se apoya en una pila tecnológica robusta y desacoplada del sistema operativo principal para garantizar la estabilidad:
+
+* **Core:** Python 3.14+.
+* **Vector DB:** FAISS para almacenamiento de embeddings semánticos.
+* **Modelos:** Llama 3.1 (Texto), LLaVA (Visión), Whisper (Audio).
+* **Integración:** Lanzadores `.desktop` integrados en **KRunner** para acceso inmediato mediante atajos de teclado.
+
+## 📦 Instalación
+
+1.  **Dependencias del Sistema:**
+    ```bash
+    sudo pacman -S ollama poppler github-cli
+    ```
+2.  **Clonar y Configurar:**
+    ```bash
+    git clone [https://github.com/antupillan/cerebro-ia-local.git](https://github.com/antupillan/cerebro-ia-local.git)
+    cd cerebro-ia-local
+    ./setup.sh
+    ```
+3.  **Entorno Virtual:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+
+## ⌨️ Atajos de KRunner (Alt + Space)
+
+| Comando | Acción |
+| :--- | :--- |
+| `Cerebro IA` | Inicia chat con memoria persistente. |
+| `Cerebro: Vista` | Procesa imágenes y documentos visuales. |
+| `Consejo Líquido` | Auditoría estratégica de proyectos. |
+| `Comandos IA` | Abre la hoja de referencia técnica. |
+
+## ⚖️ Licencia
+Este proyecto es una implementación personal de código abierto enfocada en la soberanía de datos y la automatización avanzada.
+</file>
+
+<file path="setup.sh">
+#!/bin/bash
+
+echo "🚀 Iniciando instalación de Cerebro IA Local..."
+
+# 1. Detectar usuario y rutas actuales
+USER_HOME=$HOME
+INSTALL_DIR="$USER_HOME/cerebro_cli"
+DESKTOP_DIR="$USER_HOME/.local/share/applications"
+
+echo "📂 Directorio detectado: $INSTALL_DIR"
+
+# 2. Crear carpetas si no existen
+mkdir -p "$DESKTOP_DIR"
+
+# 3. Copiar y configurar lanzadores
+echo "⚙️  Configurando lanzadores para el usuario: $USER..."
+
+for file in install/*.desktop; do
+    filename=$(basename "$file")
+    target="$DESKTOP_DIR/$filename"
+    
+    # Copiamos el archivo
+    cp "$file" "$target"
+    
+    # Reemplazamos TU_USUARIO por el usuario real del sistema
+    sed -i "s|/home/TU_USUARIO|$USER_HOME|g" "$target"
+    
+    echo "   ✅ Instalado: $filename"
+done
+
+# 4. Permisos de ejecución a los scripts binarios
+chmod +x "$INSTALL_DIR/bin/"*.sh
+
+# 5. Actualizar base de datos de escritorio
+update-desktop-database "$DESKTOP_DIR" 2>/dev/null || kbuildsycoca6 2>/dev/null
+
+echo "🎉 Instalación completada. Presiona Alt+Space y busca 'Cerebro'."
+</file>
+
+<file path="test_rutas.py">
+import os
+rutas = [
+    "/home/entropia/Documentos/Kia Besta",
+    "/home/entropia/Documentos/Biblioteca_Calibre",
+    "/home/entropia/Documentos/Filosofia"
+]
+for r in rutas:
+    existe = os.path.exists(r)
+    contenido = len(os.listdir(r)) if existe else "N/A"
+    print(f"Ruta: '{r}' | Existe: {existe} | Archivos: {contenido}")
 </file>
 
 <file path="vigia.py">
@@ -865,31 +1221,6 @@ if __name__ == "__main__":
     main()
 </file>
 
-<file path="bin/run_bibliotecario_auto.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-echo "🕵️ Escaneo rápido de archivos en curso..."
-python bibliotecario.py --auto
-read -p "Inventario actualizado. Enter para salir..."
-</file>
-
-<file path="bin/run_bibliotecario_menu.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-python bibliotecario.py
-read -p "Gestión terminada. Enter para salir..."
-</file>
-
-<file path="bin/run_bibliotecario.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-python bibliotecario.py
-read -p "Presiona Enter para cerrar..."
-</file>
-
 <file path="bin/run_cerebro_audio.sh">
 #!/bin/bash
 
@@ -943,148 +1274,28 @@ python franki_krunner.py fast "$TEXTO_TRANSCRITO"
 rm "$TEMP_AUDIO"
 </file>
 
-<file path="bin/run_cerebro_chat.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-python cerebro.py
-read -p "Cierre de sesión. Enter para salir..."
-</file>
+<file path=".gitignore">
+# Entornos virtuales
+venv/
+env/
+.env
 
-<file path="bin/run_cerebro_full.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-echo "👁️👂 Procesando Multimedia (Imágenes y Audio)..."
-python cerebro.py --vision --audio
-read -p "Procesamiento sensorial terminado. Enter para salir..."
-</file>
+# Cache de Python
+__pycache__/
+*.pyc
 
-<file path="bin/run_cerebro_text.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-echo "📚 Actualizando lecturas (Texto, PDF, Docs)..."
-python cerebro.py --texto
-read -p "Lectura completada. Enter para salir..."
-</file>
+# Datos Personales (LA MEMORIA)
+faiss_db/
+chroma_db/
+*.pkl
+*.json
 
-<file path="bin/run_cerebro_vision.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-echo "👁️ Analizando Imágenes y PDFs escaneados..."
-python cerebro.py --vision
-read -p "Análisis visual completado. Enter para salir..."
-</file>
-
-<file path="bin/run_cerebro.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-python cerebro.py
-# Pausa al final por si hay error, para poder leerlo
-read -p "Presiona Enter para cerrar..."
-</file>
-
-<file path="bin/run_consejero.sh">
-#!/bin/bash
-cd /home/entropia/cerebro_cli
-source venv/bin/activate
-python consejero.py
-read -p "Sesión estratégica finalizada. Enter para salir..."
-</file>
-
-<file path="install/bibliotecario-ia.desktop">
-[Desktop Entry]
-Name=Bibliotecario IA
-GenericName=Organizador de Archivos
-Comment=Escaneo automático y organización
-Exec=$HOME/cerebro_cli/bin/run_bibliotecario_auto.sh
-Icon=folder-documents
-Terminal=true
-Type=Application
-Categories=System;FileTools;
-Keywords=organizar;archivos;duplicados;limpieza;escanear;
-</file>
-
-<file path="install/bibliotecario-juez.desktop">
-[Desktop Entry]
-Name=Bibliotecario: Juez
-GenericName=Gestión Manual
-Comment=Menú para eliminar duplicados y ver stats
-Exec=$HOME/cerebro_cli/bin/run_bibliotecario_menu.sh
-Icon=folder-blue
-Terminal=true
-Type=Application
-Categories=System;
-Keywords=juez;duplicados;manual;gestion;
-</file>
-
-<file path="install/cerebro-audio.desktop">
-[Desktop Entry]
-Name=Cerebro: Oído
-GenericName=Update Audio
-Comment=Solo transcribe grabaciones (Whisper)
-Exec=$HOME/cerebro_cli/bin/run_cerebro_audio.sh
-Icon=audio-volume-high
-Terminal=true
-Type=Application
-Categories=Utility;
-Keywords=escuchar;audio;oido;whisper;cerebro;
-</file>
-
-<file path="install/cerebro-ia.desktop">
-[Desktop Entry]
-Name=Cerebro IA
-GenericName=Asistente Multimodal
-Comment=Chat con memoria (Llama/Ollama)
-Exec=$HOME/cerebro_cli/bin/run_cerebro_chat.sh
-Icon=utilities-terminal
-Terminal=true
-Type=Application
-Categories=Utility;AI;
-Keywords=chat;ia;gpt;llama;cerebro;hablar;
-</file>
-
-<file path="install/cerebro-lectura.desktop">
-[Desktop Entry]
-Name=Cerebro: Lectura Rápida
-GenericName=Update Texto
-Comment=Solo lee texto, PDFs y Docs (Rápido)
-Exec=$HOME/cerebro_cli/bin/run_cerebro_text.sh
-Icon=text-x-generic
-Terminal=true
-Type=Application
-Categories=Utility;
-Keywords=actualizar;leer;texto;pdf;
-</file>
-
-<file path="install/cerebro-vision.desktop">
-[Desktop Entry]
-Name=Cerebro: Vista
-GenericName=Update Imágenes
-Comment=Solo analiza imágenes y PDFs escaneados (LLaVA)
-Exec=$HOME/cerebro_cli/bin/run_cerebro_vision.sh
-Icon=camera-photo
-Terminal=true
-Type=Application
-Categories=Utility;
-Keywords=ver;vision;imagenes;fotos;cerebro;
-</file>
-
-<file path="install/ia-help.desktop">
-[Desktop Entry]
-Name=Comandos IA
-GenericName=Hoja de Referencia
-Comment=Ver lista de comandos del sistema Cerebro
-# EJECUTA MICRO EN UNA VENTANA DE TERMINAL
-Exec=micro /home/TU_USUARIO/cerebro_cli/COMANDOS.txt
-Icon=help-about
-Terminal=true  <--- CAMBIA ESTO A TRUE
-Type=Application
-Categories=Documentation;
-Keywords=ayuda;comandos;lista;chuleta;cerebro;
+# Archivos de sistema y logs
+.DS_Store
+*.log
+COMANDOS.txt
+inventario_maestro.db
+*.db
 </file>
 
 <file path="bibliotecario.py">
@@ -1230,95 +1441,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-</file>
-
-<file path="COMANDOS.txt~">
-
-</file>
-
-<file path="limpieza_duplicados.sh">
-#!/bin/bash
-# Script generado automáticamente. Ahorro potencial: 155.93 MB
-# REVISA ESTE ARCHIVO ANTES DE EJECUTARLO
-
-rm "/home/entropia/Documentos/Calibre Library/Soporte Integritic/Prueba Inf Psicoped 3deg Basico 653975bf0cc68f8eeaac16f5 (3958)/cover.jpg" # Duplicado de: cover.jpg
-rm "/home/entropia/Documentos/Calibre Library/Gustavo Elias Rojo Barros/Base de datos funcionarios SLEP Licancabur-1 (3952)/cover.jpg" # Duplicado de: cover.jpg
-rm "/home/entropia/Documentos/Calibre Library/Biblioteca del Congreso Nacional de Chile/Ley 21545 (3895)/cover.jpg" # Duplicado de: cover.jpg
-rm "/home/entropia/Documentos/Calibre Library/Charles K. Alexander/Fundamentos de circuitos electricos, 3ra Ed (4006)/Fundamentos de circuitos electricos, 3ra E - Charles K. Alexander.pdf" # Duplicado de: Fundamentos de circuitos electricos, 3ra E - Charles K. Alexander.pdf
-rm "/home/entropia/Documentos/Calibre Library/Biblioteca del Congreso Nacional de Chile/Ley 21545 (3895)/Ley 21545 - Biblioteca del Congreso Nacional de Chile.pdf" # Duplicado de: Ley 21545 - Biblioteca del Congreso Nacional de Chile.pdf
-rm "/home/entropia/Documentos/Calibre Library/Friederich Nietzsche/El crepusculo de los idolos (3872)/El crepusculo de los idolos - Friederich Nietzsche.pdf" # Duplicado de: El crepusculo de los idolos - Friedrich Nietzsche.pdf
-rm "/home/entropia/Documentos/Calibre Library/Gustavo Elias Rojo Barros/Base de datos funcionarios SLEP Licancabur-1 (3952)/Base de datos funcionarios SLEP Licancabur - Gustavo Elias Rojo Barros.pdf" # Duplicado de: Base de datos funcionarios SLEP Licancabur - Gustavo Elias Rojo Barros.pdf
-rm "/home/entropia/Documentos/Calibre Library/Volumen 4 (1)/Curso de Electronica Digital Cekit (3994)/Curso de Electronica Digital Cekit - Volumen 4 (1).pdf" # Duplicado de: Curso de Electronica Digital Cekit - Volumen 4.pdf
-rm "/home/entropia/Documentos/Calibre Library/Desconocido/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE-1 (3963)/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE- - Desconocido.pdf" # Duplicado de: ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE - Desconocido.pdf
-rm "/home/entropia/Documentos/Calibre Library/Charles K. Alexander/Fundamentos de circuitos electricos, 3ra Ed (4006)/cover.jpg" # Duplicado de: cover.jpg
-rm "/home/entropia/Documentos/Defensa/Boleta_78103192-5-2.pdf" # Duplicado de: Boleta 78103192-5-2-1 - Desconocido.pdf
-rm "/home/entropia/Documentos/Calibre Library/Soporte Integritic/Prueba Inf Psicoped 3deg Basico 653975bf0cc68f8eeaac16f5 (3958)/Prueba Inf Psicoped 3deg Basico 653975bf0c - Soporte Integritic.pdf" # Duplicado de: APznzaYNCU5A6t16QznOCLWv zBCo3BjDu4WN29WdF - Soporte Integritic.pdf
-rm "/home/entropia/Documentos/Calibre Library/Desconocido/guia-para-la-gobernanza-efectiva-de-fundaciones-y-corporaciones-en-chile-2019- (3886)/guia-para-la-gobernanza-efectiva-de-fundac - Desconocido.pdf" # Duplicado de: f827138216 - Desconocido.pdf
-rm "/home/entropia/Documentos/Calibre Library/Desconocido/ANEXO-PROGRAMA-DE-INTEGRACION-ESCOLAR-PIE-1 (3963)/cover.jpg" # Duplicado de: cover.jpg
-rm "/home/entropia/Documentos/Calibre Library/Friederich Nietzsche/El crepusculo de los idolos (3872)/cover.jpg" # Duplicado de: cover.jpg
-rm "/home/entropia/Documentos/Calibre Library/Volumen 4 (1)/Curso de Electronica Digital Cekit (3994)/cover.jpg" # Duplicado de: cover.jpg
-</file>
-
-<file path="README.md">
-# Cerebro: Local AI OS Integration for Garuda Linux 🧠💻
-
-Cerebro es un ecosistema de Inteligencia Artificial local diseñado para integrarse profundamente con el flujo de trabajo de un usuario avanzado de Linux (KDE/Garuda). A diferencia de los asistentes de chat convencionales, este sistema opera bajo una arquitectura de **Modernidad Líquida**, adaptando su identidad y funciones dinámicamente según el contexto de los datos del usuario.
-
-## 🚀 Características Principales
-
-### 1. Cerebro IA (Multimodalidad Local)
-Motor de RAG (Retrieval-Augmented Generation) que procesa y memoriza el contexto local del usuario utilizando modelos de última generación ejecutados localmente vía **Ollama**.
-* **Lectura:** Indexación semántica de PDFs y archivos de texto.
-* **Vista:** Análisis de imágenes y planos mediante **LLaVA**.
-* **Oído:** Transcripción y análisis de audio con **OpenAI Whisper**.
-
-### 2. Bibliotecario IA (Gestión de Datos)
-Automatización del mantenimiento del sistema de archivos.
-* Escaneo silencioso y actualización de la base de datos SQL del inventario.
-* Detección proactiva de archivos duplicados y gestión de limpieza.
-
-### 3. Consejo Líquido (Estratega Reactivo)
-Un agente de auditoría proactiva que analiza el estado de proyectos específicos (como la restauración de la Kia Besta o el desarrollo de Aetheria) para ofrecer sugerencias estratégicas basadas en la síntesis de toda la memoria local.
-
-## 🛠️ Arquitectura Técnica
-
-El sistema se apoya en una pila tecnológica robusta y desacoplada del sistema operativo principal para garantizar la estabilidad:
-
-* **Core:** Python 3.14+.
-* **Vector DB:** FAISS para almacenamiento de embeddings semánticos.
-* **Modelos:** Llama 3.1 (Texto), LLaVA (Visión), Whisper (Audio).
-* **Integración:** Lanzadores `.desktop` integrados en **KRunner** para acceso inmediato mediante atajos de teclado.
-
-## 📦 Instalación
-
-1.  **Dependencias del Sistema:**
-    ```bash
-    sudo pacman -S ollama poppler github-cli
-    ```
-2.  **Clonar y Configurar:**
-    ```bash
-    git clone [https://github.com/antupillan/cerebro-ia-local.git](https://github.com/antupillan/cerebro-ia-local.git)
-    cd cerebro-ia-local
-    ./setup.sh
-    ```
-3.  **Entorno Virtual:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    ```
-
-## ⌨️ Atajos de KRunner (Alt + Space)
-
-| Comando | Acción |
-| :--- | :--- |
-| `Cerebro IA` | Inicia chat con memoria persistente. |
-| `Cerebro: Vista` | Procesa imágenes y documentos visuales. |
-| `Consejo Líquido` | Auditoría estratégica de proyectos. |
-| `Comandos IA` | Abre la hoja de referencia técnica. |
-
-## ⚖️ Licencia
-Este proyecto es una implementación personal de código abierto enfocada en la soberanía de datos y la automatización avanzada.
 </file>
 
 <file path="requirements.txt">
@@ -1475,83 +1597,6 @@ zipp==3.23.0
 zstandard==0.25.0
 </file>
 
-<file path="setup.sh">
-#!/bin/bash
-
-echo "🚀 Iniciando instalación de Cerebro IA Local..."
-
-# 1. Detectar usuario y rutas actuales
-USER_HOME=$HOME
-INSTALL_DIR="$USER_HOME/cerebro_cli"
-DESKTOP_DIR="$USER_HOME/.local/share/applications"
-
-echo "📂 Directorio detectado: $INSTALL_DIR"
-
-# 2. Crear carpetas si no existen
-mkdir -p "$DESKTOP_DIR"
-
-# 3. Copiar y configurar lanzadores
-echo "⚙️  Configurando lanzadores para el usuario: $USER..."
-
-for file in install/*.desktop; do
-    filename=$(basename "$file")
-    target="$DESKTOP_DIR/$filename"
-    
-    # Copiamos el archivo
-    cp "$file" "$target"
-    
-    # Reemplazamos TU_USUARIO por el usuario real del sistema
-    sed -i "s|/home/TU_USUARIO|$USER_HOME|g" "$target"
-    
-    echo "   ✅ Instalado: $filename"
-done
-
-# 4. Permisos de ejecución a los scripts binarios
-chmod +x "$INSTALL_DIR/bin/"*.sh
-
-# 5. Actualizar base de datos de escritorio
-update-desktop-database "$DESKTOP_DIR" 2>/dev/null || kbuildsycoca6 2>/dev/null
-
-echo "🎉 Instalación completada. Presiona Alt+Space y busca 'Cerebro'."
-</file>
-
-<file path="test_rutas.py">
-import os
-rutas = [
-    "/home/entropia/Documentos/Kia Besta",
-    "/home/entropia/Documentos/Biblioteca_Calibre",
-    "/home/entropia/Documentos/Filosofia"
-]
-for r in rutas:
-    existe = os.path.exists(r)
-    contenido = len(os.listdir(r)) if existe else "N/A"
-    print(f"Ruta: '{r}' | Existe: {existe} | Archivos: {contenido}")
-</file>
-
-<file path=".gitignore">
-# Entornos virtuales
-venv/
-env/
-.env
-
-# Cache de Python
-__pycache__/
-*.pyc
-
-# Datos Personales (LA MEMORIA)
-faiss_db/
-chroma_db/
-*.pkl
-*.json
-
-# Archivos de sistema y logs
-.DS_Store
-*.log
-COMANDOS.txt
-inventario_maestro.db
-*.db
-</file>
-
 <file path="cerebro.py">
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -1571,6 +1616,7 @@ import shutil
 import warnings
 import functools
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 # Configuración de Rutas (Absoluta para compartir memoria)
 # Usamos una carpeta en el home para asegurar persistencia y acceso global
@@ -1591,7 +1637,7 @@ except ImportError:
 
 from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_core.documents import Document
 
 warnings.filterwarnings("ignore")
@@ -1608,23 +1654,73 @@ class NexoCognitivo:
             except: pass
         return None
 
+    def _normalizar_a_markdown(self, texto, metadatos):
+        """Si el texto no tiene estructura, se la damos basada en su origen."""
+        tipo = metadatos.get("type", "GENERAL").upper()
+        origen = metadatos.get("source", "Desconocido")
+        fecha = datetime.now().strftime("%Y-%m-%d")
+
+        # Si ya parece markdown con headers, lo dejamos (búsqueda simple de '# ')
+        if "\n# " in texto or texto.startswith("# "):
+            return texto
+
+        # Plantillas de Normalización
+        if tipo == "AUDIO":
+            return f"# 🎙️ Transcripción de Audio\n**Fuente:** {origen}\n**Fecha:** {fecha}\n\n## Contenido\n{texto}"
+        elif tipo == "IMAGEN" or tipo == "VISION":
+            return f"# 👁️ Análisis Visual\n**Archivo:** {origen}\n**Fecha:** {fecha}\n\n## Descripción\n{texto}"
+        elif tipo == "ARCHIVO":
+            return f"# 📄 Documento: {os.path.basename(origen)}\n**Ruta:** {origen}\n\n## Texto Extraído\n{texto}"
+        elif "WEB" in tipo or "INVESTIGACION" in tipo:
+            return f"# 🌍 Investigación Web\n**Query:** {origen}\n**Fecha:** {fecha}\n\n## Hallazgos\n{texto}"
+        elif tipo == "AGENDA" or tipo == "CRONOS":
+            return f"# 📅 Evento de Agenda\n**Contexto:** {origen}\n**Fecha Registro:** {fecha}\n\n## Detalle\n{texto}"
+        else:
+            return f"# 🧠 Memoria del Sistema\n**Origen:** {origen}\n**Tipo:** {tipo}\n\n## Datos\n{texto}"
+
     def aprender(self, texto, metadatos):
-        """Método público para indexar datos."""
+        """Método público para indexar datos con Estrategia de Markdown Inteligente."""
         if not texto or len(texto) < 10: return
+        
+        # Copia de metadatos para no mutar el original
+        meta_safe = metadatos.copy()
         
         def tarea():
             try:
-                # print(f"   🧠 [NEUROPLASTICIDAD] Memorizando: {metadatos.get('source', 'dato')}...")
-                doc = Document(page_content=texto, metadata=metadatos)
-                splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-                splits = splitter.split_documents([doc])
+                # 1. Normalización: Asegurar que entra como Markdown estructurado
+                texto_md = self._normalizar_a_markdown(texto, meta_safe)
+                
+                # 2. Split por Estructura Lógica (Headers)
+                # Esto asegura que el contexto (Título/Sección) viaje con el fragmento
+                headers_to_split_on = [
+                    ("#", "Titulo"),
+                    ("##", "Seccion"),
+                    ("###", "Subseccion"),
+                ]
+                markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
+                md_header_splits = markdown_splitter.split_text(texto_md)
+
+                # 3. Split por Tamaño (Para secciones muy largas que pasen el límite de tokens)
+                # chunk_size=1000 es un buen balance para Llama 3/DeepSeek
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000, 
+                    chunk_overlap=200
+                )
+                
+                final_splits = text_splitter.split_documents(md_header_splits)
+                
+                # 4. Re-inyectar metadatos base y guardar
+                for split in final_splits:
+                    split.metadata.update(meta_safe) # Agregamos fuente, tipo, etc.
                 
                 if self.vectorstore is None:
-                    self.vectorstore = FAISS.from_documents(splits, self.embeddings)
+                    self.vectorstore = FAISS.from_documents(final_splits, self.embeddings)
                 else:
-                    self.vectorstore.add_documents(splits)
+                    self.vectorstore.add_documents(final_splits)
                 
                 self.vectorstore.save_local(DB_PATH)
+                # print(f"   🧠 [NEUROPLASTICIDAD] Asimilado: {meta_safe.get('source')} ({len(final_splits)} fragmentos)")
+                
             except Exception as e:
                 print(f"   ❌ Fallo al memorizar: {e}")
         
@@ -1742,6 +1838,7 @@ import warnings
 import requests
 from bs4 import BeautifulSoup
 from ddgs import DDGS
+import html2text
 
 # Configuración de Logs
 warnings.filterwarnings("ignore")
@@ -1777,23 +1874,31 @@ def buscar_web(query, max_results=5):
         return []
 
 def leer_pagina(url):
-    """Lee el contenido de texto de una URL."""
-    # print(f"   🌐 Leyendo: {url}...", file=sys.stderr)
+    """
+    [CONSEJERO] Lee una URL y la convierte a Markdown limpio.
+    Mantiene enlaces, tablas y estructura, pero elimina el ruido.
+    """
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
         response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+        response.raise_for_status() 
         
-        for script in soup(["script", "style", "nav", "footer"]):
-            script.decompose()
-            
-        text = soup.get_text()
-        lines = (line.strip() for line in text.splitlines())
-        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        return '\n'.join(chunk for chunk in chunks if chunk)[:5000]
-    except:
-        return ""
+        # Configurar el convertidor
+        h = html2text.HTML2Text()
+        h.ignore_links = False      
+        h.ignore_images = True      
+        h.ignore_emphasis = False   
+        h.body_width = 0            
+        
+        # Conversión
+        markdown_content = h.handle(response.text)
+        
+        # Limpieza extra
+        clean_md = "\n".join([line for line in markdown_content.splitlines() if line.strip()])
+        
+        return clean_md[:8000] 
+    except Exception as e:
+        return f"Error leyendo web: {e}"
 
 def sintetizar_info(query, resultados):
     """Usa Llama 3.1 para generar un informe."""
@@ -2057,6 +2162,72 @@ def tool_obsidian_note(filename: str, content: str, folder: str = ""):
     except Exception as e: return f"Error: {e}"
 
 @tool
+def tool_publish_document(input_file: str, format: str = "typst", template: str = "engineering"):
+    """
+    [EDITOR] Convierte notas Markdown a PDF profesional usando Typst o LaTeX.
+    Args:
+        input_file: Ruta al archivo .md (ej: "propuesta.md")
+        format: 'typst' (Moderno/Rápido) o 'latex' (Académico/Estándar).
+        template: 'engineering' (ISO), 'report' (Visual), 'memo' (Simple).
+    """
+    if not os.path.exists(input_file): return f"Error: Archivo {input_file} no encontrado."
+    
+    base_name = os.path.splitext(input_file)[0]
+    output_pdf = f"{base_name}.pdf"
+    
+    print(f"{UI.CYAN}   📄 [PUBLISHER] Compilando {input_file} a PDF ({format.upper()})...{UI.RESET}")
+    
+    cmd = []
+    if format == "latex":
+        # Conversión robusta vía XeLaTeX
+        cmd = ["pandoc", input_file, "-o", output_pdf, "--pdf-engine=xelatex", "-V", "geometry:margin=1in"]
+    elif format == "typst":
+        # Conversión moderna directa (requiere pandoc reciente o typst CLI directo)
+        # Pandoc usa typst como motor si se especifica
+        cmd = ["pandoc", input_file, "-o", output_pdf, "--pdf-engine=typst"]
+    else:
+        return "Error: Formato desconocido. Usa 'typst' o 'latex'."
+    
+    try:
+        subprocess.run(cmd, check=True)
+        return f"✅ Documento publicado exitosamente: {output_pdf}"
+    except subprocess.CalledProcessError as e:
+        return f"❌ Error en compilación {format.upper()}: {e}\n(Asegúrate de tener instalado 'pandoc' y '{format}')"
+
+@tool
+def tool_compile_project(md_file: str, output_name: str = "reporte_final"):
+    """
+    [EDITOR] Compila el Markdown actual a un PDF de ingeniería usando Typst.
+    Soporta: Imágenes PNG/JPG y Vectores SVG automáticamente.
+    Genera el archivo en la carpeta 'dist/'.
+    """
+    if not os.path.exists(md_file): return f"Error: Archivo {md_file} no encontrado."
+    
+    # Creamos carpeta de salida si no existe
+    if not os.path.exists("dist"): os.makedirs("dist")
+    
+    output_pdf = f"dist/{output_name}.pdf"
+    
+    print(f"{UI.CYAN}   📄 [TYPST] Compilando documento con activos vectoriales...{UI.RESET}")
+    
+    # Comando: Pandoc lee Markdown -> Usa el motor Typst -> Genera PDF
+    # --standalone asegura que tenga cabeceras y pies de página correctos
+    cmd = [
+        "pandoc",
+        md_file,
+        "-o", output_pdf,
+        "--pdf-engine=typst",
+        "--standalone",
+        f"--metadata=date:{datetime.now().strftime('%Y-%m-%d')}"
+    ]
+    
+    try:
+        subprocess.run(cmd, check=True)
+        return f"✅ Documento listo: {output_pdf} (Incluye vectores e imágenes)"
+    except subprocess.CalledProcessError as e:
+        return f"❌ Error de compilación: {e}"
+
+@tool
 def tool_list_directory(path: str = "."):
     """[SISTEMA] Lista archivos. NO usar Bash para esto."""
     path = os.path.expanduser(path)
@@ -2195,7 +2366,7 @@ class FrankiBrain:
             tool_smart_knowledge, tool_see_screen, tool_system_health, # <--- HERRAMIENTAS EJECUTIVAS
             tool_calendar_check, tool_calendar_add, # <--- CRONOS
             tool_list_directory, tool_read_file, sys_bash,
-            tool_openscad_compile, tool_graphviz_render, tool_obsidian_note
+            tool_openscad_compile, tool_graphviz_render, tool_obsidian_note, tool_publish_document, tool_compile_project
         ]
         self.tool_map = {t.name: t for t in self.tools}
         self.llm = ChatOllama(model=FEDERATION["orchestrator"], temperature=0.1)

@@ -16,6 +16,7 @@ import shutil
 import warnings
 import functools
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 # Configuración de Rutas (Absoluta para compartir memoria)
 # Usamos una carpeta en el home para asegurar persistencia y acceso global
@@ -36,7 +37,7 @@ except ImportError:
 
 from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_core.documents import Document
 
 warnings.filterwarnings("ignore")
@@ -53,23 +54,73 @@ class NexoCognitivo:
             except: pass
         return None
 
+    def _normalizar_a_markdown(self, texto, metadatos):
+        """Si el texto no tiene estructura, se la damos basada en su origen."""
+        tipo = metadatos.get("type", "GENERAL").upper()
+        origen = metadatos.get("source", "Desconocido")
+        fecha = datetime.now().strftime("%Y-%m-%d")
+
+        # Si ya parece markdown con headers, lo dejamos (búsqueda simple de '# ')
+        if "\n# " in texto or texto.startswith("# "):
+            return texto
+
+        # Plantillas de Normalización
+        if tipo == "AUDIO":
+            return f"# 🎙️ Transcripción de Audio\n**Fuente:** {origen}\n**Fecha:** {fecha}\n\n## Contenido\n{texto}"
+        elif tipo == "IMAGEN" or tipo == "VISION":
+            return f"# 👁️ Análisis Visual\n**Archivo:** {origen}\n**Fecha:** {fecha}\n\n## Descripción\n{texto}"
+        elif tipo == "ARCHIVO":
+            return f"# 📄 Documento: {os.path.basename(origen)}\n**Ruta:** {origen}\n\n## Texto Extraído\n{texto}"
+        elif "WEB" in tipo or "INVESTIGACION" in tipo:
+            return f"# 🌍 Investigación Web\n**Query:** {origen}\n**Fecha:** {fecha}\n\n## Hallazgos\n{texto}"
+        elif tipo == "AGENDA" or tipo == "CRONOS":
+            return f"# 📅 Evento de Agenda\n**Contexto:** {origen}\n**Fecha Registro:** {fecha}\n\n## Detalle\n{texto}"
+        else:
+            return f"# 🧠 Memoria del Sistema\n**Origen:** {origen}\n**Tipo:** {tipo}\n\n## Datos\n{texto}"
+
     def aprender(self, texto, metadatos):
-        """Método público para indexar datos."""
+        """Método público para indexar datos con Estrategia de Markdown Inteligente."""
         if not texto or len(texto) < 10: return
+        
+        # Copia de metadatos para no mutar el original
+        meta_safe = metadatos.copy()
         
         def tarea():
             try:
-                # print(f"   🧠 [NEUROPLASTICIDAD] Memorizando: {metadatos.get('source', 'dato')}...")
-                doc = Document(page_content=texto, metadata=metadatos)
-                splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-                splits = splitter.split_documents([doc])
+                # 1. Normalización: Asegurar que entra como Markdown estructurado
+                texto_md = self._normalizar_a_markdown(texto, meta_safe)
+                
+                # 2. Split por Estructura Lógica (Headers)
+                # Esto asegura que el contexto (Título/Sección) viaje con el fragmento
+                headers_to_split_on = [
+                    ("#", "Titulo"),
+                    ("##", "Seccion"),
+                    ("###", "Subseccion"),
+                ]
+                markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
+                md_header_splits = markdown_splitter.split_text(texto_md)
+
+                # 3. Split por Tamaño (Para secciones muy largas que pasen el límite de tokens)
+                # chunk_size=1000 es un buen balance para Llama 3/DeepSeek
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000, 
+                    chunk_overlap=200
+                )
+                
+                final_splits = text_splitter.split_documents(md_header_splits)
+                
+                # 4. Re-inyectar metadatos base y guardar
+                for split in final_splits:
+                    split.metadata.update(meta_safe) # Agregamos fuente, tipo, etc.
                 
                 if self.vectorstore is None:
-                    self.vectorstore = FAISS.from_documents(splits, self.embeddings)
+                    self.vectorstore = FAISS.from_documents(final_splits, self.embeddings)
                 else:
-                    self.vectorstore.add_documents(splits)
+                    self.vectorstore.add_documents(final_splits)
                 
                 self.vectorstore.save_local(DB_PATH)
+                # print(f"   🧠 [NEUROPLASTICIDAD] Asimilado: {meta_safe.get('source')} ({len(final_splits)} fragmentos)")
+                
             except Exception as e:
                 print(f"   ❌ Fallo al memorizar: {e}")
         

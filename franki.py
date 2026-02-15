@@ -202,6 +202,72 @@ def tool_obsidian_note(filename: str, content: str, folder: str = ""):
     except Exception as e: return f"Error: {e}"
 
 @tool
+def tool_publish_document(input_file: str, format: str = "typst", template: str = "engineering"):
+    """
+    [EDITOR] Convierte notas Markdown a PDF profesional usando Typst o LaTeX.
+    Args:
+        input_file: Ruta al archivo .md (ej: "propuesta.md")
+        format: 'typst' (Moderno/Rápido) o 'latex' (Académico/Estándar).
+        template: 'engineering' (ISO), 'report' (Visual), 'memo' (Simple).
+    """
+    if not os.path.exists(input_file): return f"Error: Archivo {input_file} no encontrado."
+    
+    base_name = os.path.splitext(input_file)[0]
+    output_pdf = f"{base_name}.pdf"
+    
+    print(f"{UI.CYAN}   📄 [PUBLISHER] Compilando {input_file} a PDF ({format.upper()})...{UI.RESET}")
+    
+    cmd = []
+    if format == "latex":
+        # Conversión robusta vía XeLaTeX
+        cmd = ["pandoc", input_file, "-o", output_pdf, "--pdf-engine=xelatex", "-V", "geometry:margin=1in"]
+    elif format == "typst":
+        # Conversión moderna directa (requiere pandoc reciente o typst CLI directo)
+        # Pandoc usa typst como motor si se especifica
+        cmd = ["pandoc", input_file, "-o", output_pdf, "--pdf-engine=typst"]
+    else:
+        return "Error: Formato desconocido. Usa 'typst' o 'latex'."
+    
+    try:
+        subprocess.run(cmd, check=True)
+        return f"✅ Documento publicado exitosamente: {output_pdf}"
+    except subprocess.CalledProcessError as e:
+        return f"❌ Error en compilación {format.upper()}: {e}\n(Asegúrate de tener instalado 'pandoc' y '{format}')"
+
+@tool
+def tool_compile_project(md_file: str, output_name: str = "reporte_final"):
+    """
+    [EDITOR] Compila el Markdown actual a un PDF de ingeniería usando Typst.
+    Soporta: Imágenes PNG/JPG y Vectores SVG automáticamente.
+    Genera el archivo en la carpeta 'dist/'.
+    """
+    if not os.path.exists(md_file): return f"Error: Archivo {md_file} no encontrado."
+    
+    # Creamos carpeta de salida si no existe
+    if not os.path.exists("dist"): os.makedirs("dist")
+    
+    output_pdf = f"dist/{output_name}.pdf"
+    
+    print(f"{UI.CYAN}   📄 [TYPST] Compilando documento con activos vectoriales...{UI.RESET}")
+    
+    # Comando: Pandoc lee Markdown -> Usa el motor Typst -> Genera PDF
+    # --standalone asegura que tenga cabeceras y pies de página correctos
+    cmd = [
+        "pandoc",
+        md_file,
+        "-o", output_pdf,
+        "--pdf-engine=typst",
+        "--standalone",
+        f"--metadata=date:{datetime.now().strftime('%Y-%m-%d')}"
+    ]
+    
+    try:
+        subprocess.run(cmd, check=True)
+        return f"✅ Documento listo: {output_pdf} (Incluye vectores e imágenes)"
+    except subprocess.CalledProcessError as e:
+        return f"❌ Error de compilación: {e}"
+
+@tool
 def tool_list_directory(path: str = "."):
     """[SISTEMA] Lista archivos. NO usar Bash para esto."""
     path = os.path.expanduser(path)
@@ -340,7 +406,7 @@ class FrankiBrain:
             tool_smart_knowledge, tool_see_screen, tool_system_health, # <--- HERRAMIENTAS EJECUTIVAS
             tool_calendar_check, tool_calendar_add, # <--- CRONOS
             tool_list_directory, tool_read_file, sys_bash,
-            tool_openscad_compile, tool_graphviz_render, tool_obsidian_note
+            tool_openscad_compile, tool_graphviz_render, tool_obsidian_note, tool_publish_document, tool_compile_project
         ]
         self.tool_map = {t.name: t for t in self.tools}
         self.llm = ChatOllama(model=FEDERATION["orchestrator"], temperature=0.1)

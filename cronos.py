@@ -10,6 +10,14 @@ import os
 import datetime
 import re
 
+# --- INTEGRACIÓN CEREBRO (Aprendizaje Pasivo) ---
+try:
+    from cerebro import memorizar
+except ImportError:
+    # Si no hay cerebro, decorador dummy
+    def memorizar(tipo_origen):
+        return lambda func: func
+
 # Ruta a tu carpeta de Obsidian
 OBSIDIAN_VAULT_PATH = os.path.expanduser("~/Documentos/ObsidianVault")
 AGENDA_PATH = os.path.join(OBSIDIAN_VAULT_PATH, "Agenda.md")
@@ -35,6 +43,7 @@ class CronosLocal:
             return "📅 AGENDA LOCAL (Obsidian):\n" + "\n".join(pendientes[:max_results])
         except Exception as e: return f"Error: {e}"
 
+    @memorizar("AGENDA")
     def crear_evento(self, resumen, fecha_hora_iso):
         """Añade una tarea. Formato esperado fecha: YYYY-MM-DD HH:MM"""
         try:
@@ -44,7 +53,7 @@ class CronosLocal:
             nueva_tarea = f"- [ ] {timestamp} | {resumen}\n"
             with open(AGENDA_PATH, "a", encoding='utf-8') as f:
                 f.write(nueva_tarea)
-            return f"✅ Tarea anotada: {resumen}"
+            return f"✅ Tarea anotada: {resumen} ({timestamp})"
         except Exception as e: return f"Error: {e}"
 
     def obtener_eventos_raw(self):
